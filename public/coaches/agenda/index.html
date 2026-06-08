@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Agenda JITO — Cronograma Personal</title>
+<script src="../_vendor/tailwind.cdn.js"></script>
+<script crossorigin src="../_vendor/react.production.min.js"></script>
+<script crossorigin src="../_vendor/react-dom.production.min.js"></script>
+<script src="../_vendor/babel.min.js"></script>
+<style>
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .animate-fadeIn { animation: fadeIn 0.18s ease-out; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useRef, Fragment } = React;
+
+/* ============================
+   Iconos SVG inline
+   ============================ */
+const Icon = ({ d, w = 16, h = 16, className = "", strokeWidth = 2, fill = "none", children }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={w} height={h} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
+    {d ? <path d={d} /> : children}
+  </svg>
+);
+const IconCalendar  = (p) => <Icon {...p}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></Icon>;
+const IconClock     = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></Icon>;
+const IconPlus      = (p) => <Icon {...p} d="M12 5v14M5 12h14" />;
+const IconEdit      = (p) => <Icon {...p}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></Icon>;
+const IconTrash     = (p) => <Icon {...p}><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></Icon>;
+const IconCheck     = (p) => <Icon {...p} d="M20 6 9 17l-5-5" />;
+const IconX         = (p) => <Icon {...p} d="M18 6 6 18M6 6l12 12" />;
+const IconBell      = (p) => <Icon {...p}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></Icon>;
+const IconBellRing  = (p) => <Icon {...p}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="M4 2C2.8 3.7 2 5.7 2 8M22 8c0-2.3-.8-4.3-2-6"/></Icon>;
+const IconSearch    = (p) => <Icon {...p}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></Icon>;
+const IconFilter    = (p) => <Icon {...p} d="M22 3H2l8 9.46V19l4 2v-8.54z" />;
+const IconDownload  = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></Icon>;
+const IconUpload    = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></Icon>;
+const IconSun       = (p) => <Icon {...p}><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></Icon>;
+const IconMoon      = (p) => <Icon {...p} d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />;
+const IconChevLeft  = (p) => <Icon {...p} d="m15 18-6-6 6-6" />;
+const IconChevRight = (p) => <Icon {...p} d="m9 18 6-6-6-6" />;
+const IconAlert     = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></Icon>;
+const IconCheckCirc = (p) => <Icon {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></Icon>;
+const IconCircle    = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/></Icon>;
+const IconPlay      = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="m10 8 6 4-6 4V8z"/></Icon>;
+const IconXCirc     = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></Icon>;
+const IconGrid      = (p) => <Icon {...p}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></Icon>;
+const IconCalDays   = (p) => <Icon {...p}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/></Icon>;
+const IconList      = (p) => <Icon {...p} d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />;
+const IconBars      = (p) => <Icon {...p}><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></Icon>;
+const IconSpark     = (p) => <Icon {...p} d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M5.6 18.4 18.4 5.6" strokeWidth={1.5} />;
+
+/* ============================
+   Constantes
+   ============================ */
+const CATEGORIAS = [
+  { nombre: "Trabajo",          color: "bg-blue-500",    text: "text-blue-700",    ring: "ring-blue-200",    bg: "bg-blue-50"    },
+  { nombre: "Universidad",      color: "bg-purple-500",  text: "text-purple-700",  ring: "ring-purple-200",  bg: "bg-purple-50"  },
+  { nombre: "Glass Solution",   color: "bg-cyan-500",    text: "text-cyan-700",    ring: "ring-cyan-200",    bg: "bg-cyan-50"    },
+  { nombre: "JITO / Streaming", color: "bg-pink-500",    text: "text-pink-700",    ring: "ring-pink-200",    bg: "bg-pink-50"    },
+  { nombre: "Finanzas",         color: "bg-emerald-500", text: "text-emerald-700", ring: "ring-emerald-200", bg: "bg-emerald-50" },
+  { nombre: "Personal",         color: "bg-amber-500",   text: "text-amber-700",   ring: "ring-amber-200",   bg: "bg-amber-50"   },
+  { nombre: "Trámites",         color: "bg-indigo-500",  text: "text-indigo-700",  ring: "ring-indigo-200",  bg: "bg-indigo-50"  },
+  { nombre: "Urgente",          color: "bg-red-500",     text: "text-red-700",     ring: "ring-red-200",     bg: "bg-red-50"     },
+];
+const PRIORIDADES = ["Alta", "Media", "Baja"];
+const ESTADOS = ["Pendiente", "En proceso", "Completada", "Cancelada"];
+const RECORDATORIOS = [
+  { label: "Sin recordatorio", min: 0 },
+  { label: "5 min antes",  min: 5 },
+  { label: "15 min antes", min: 15 },
+  { label: "30 min antes", min: 30 },
+  { label: "1 hora antes", min: 60 },
+  { label: "1 día antes",  min: 1440 },
+];
+const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+const SEED = [
+  { id: "ACT-0001", fecha: "2026-06-03", hora: "09:00", actividad: "Revisar campaña de Glass Solution", descripcion: "Validar textos, presupuesto y piezas visuales de la campaña de junio.", categoria: "Glass Solution",   prioridad: "Alta",  estado: "Pendiente",  recordatorio: "30 min antes", notas: "Revisar si falta arte 1:1 para Meta." },
+  { id: "ACT-0002", fecha: "2026-06-03", hora: "15:00", actividad: "Pagar servicios",                   descripcion: "Revisar pagos de internet, agua, alquiler y otros servicios.",     categoria: "Finanzas",         prioridad: "Alta",  estado: "Pendiente",  recordatorio: "1 hora antes", notas: "Confirmar comprobantes." },
+  { id: "ACT-0003", fecha: "2026-06-04", hora: "19:00", actividad: "Estudiar programación",             descripcion: "Repasar estructura ordenada de proyecto, capas, validaciones y documentación.", categoria: "Universidad", prioridad: "Media", estado: "En proceso", recordatorio: "1 día antes",  notas: "Bloque de estudio de 90 minutos." },
+  { id: "ACT-0004", fecha: "2026-06-05", hora: "20:00", actividad: "Preparar contenido para JITO",      descripcion: "Definir ideas de clips, títulos y piezas para TikTok / Twitch.",  categoria: "JITO / Streaming", prioridad: "Media", estado: "Pendiente",  recordatorio: "30 min antes", notas: "Revisar clips anteriores." },
+  { id: "ACT-0005", fecha: "2026-06-06", hora: "10:00", actividad: "Revisar cotizaciones pendientes",   descripcion: "Ordenar cotizaciones, metrajes y prioridades de seguimiento.",     categoria: "Glass Solution",   prioridad: "Alta",  estado: "Pendiente",  recordatorio: "1 hora antes", notas: "Marcar las más urgentes." },
+  { id: "ACT-0006", fecha: "2026-06-07", hora: "11:30", actividad: "Actualizar respaldo de agenda",     descripcion: "Exportar respaldo manual desde Respaldo_JSON.",                    categoria: "Personal",         prioridad: "Baja",  estado: "Pendiente",  recordatorio: "1 día antes",  notas: "Copiar JSON en archivo aparte." },
+];
+
+/* ============================
+   Utilidades
+   ============================ */
+const pad = (n) => String(n).padStart(2, "0");
+const toYMD = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseDT = (a) => new Date(`${a.fecha}T${a.hora || "00:00"}:00`);
+const nextId = (arr) => {
+  const max = arr.reduce((m, a) => {
+    const n = parseInt((a.id || "").split("-")[1] || "0", 10);
+    return n > m ? n : m;
+  }, 0);
+  return `ACT-${String(max + 1).padStart(4, "0")}`;
+};
+const getCat = (n) => CATEGORIAS.find((c) => c.nombre === n) || CATEGORIAS[5];
+const prioBadge = (p) =>
+  p === "Alta" ? "bg-red-100 text-red-700 border-red-200"
+  : p === "Media" ? "bg-yellow-100 text-yellow-700 border-yellow-200"
+  : "bg-slate-100 text-slate-700 border-slate-200";
+const estadoBadge = (e) =>
+  e === "Completada" ? "bg-emerald-100 text-emerald-700"
+  : e === "En proceso" ? "bg-blue-100 text-blue-700"
+  : e === "Cancelada" ? "bg-slate-100 text-slate-500 line-through"
+  : "bg-amber-100 text-amber-700";
+const estadoIcon = (e) => {
+  if (e === "Completada") return <IconCheckCirc w={14} h={14} />;
+  if (e === "En proceso") return <IconPlay w={14} h={14} />;
+  if (e === "Cancelada")  return <IconXCirc w={14} h={14} />;
+  return <IconCircle w={14} h={14} />;
+};
+const getReminderMin = (label) => (RECORDATORIOS.find((r) => r.label === label) || RECORDATORIOS[0]).min;
+
+/* ============================
+   App
+   ============================ */
+function App() {
+  const [actividades, setActividades] = useState(SEED);
+  const [vista, setVista] = useState("hoy");
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroCat, setFiltroCat] = useState("Todas");
+  const [filtroEstado, setFiltroEstado] = useState("Todos");
+  const [filtroPrio, setFiltroPrio] = useState("Todas");
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [editando, setEditando] = useState(null);
+  const [dark, setDark] = useState(false);
+  const [now, setNow] = useState(new Date());
+  const [navDate, setNavDate] = useState(new Date());
+  const [alertasMostradas, setAlertasMostradas] = useState(new Set());
+  const [toast, setToast] = useState(null);
+  const fileInputRef = useRef(null);
+  const [nagIntervalo, setNagIntervalo] = useState(15);
+  const [nagActivo, setNagActivo] = useState(true);
+  const [ultimoNag, setUltimoNag] = useState({});
+  const [panelNagAbierto, setPanelNagAbierto] = useState(false);
+
+  // Cargar
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("agenda-jito");
+      if (raw) { const data = JSON.parse(raw); if (Array.isArray(data) && data.length) setActividades(data); }
+      // Tema: lo manda el shell de Flowin (?flowinTheme); si no, usa el guardado.
+      const extTheme = new URLSearchParams(location.search).get("flowinTheme");
+      if (extTheme === "dark") setDark(true);
+      else if (extTheme === "light") setDark(false);
+      else if (localStorage.getItem("agenda-jito-dark") === "true") setDark(true);
+      const ni = localStorage.getItem("agenda-jito-nag-int"); if (ni) setNagIntervalo(parseInt(ni, 10) || 15);
+      if (localStorage.getItem("agenda-jito-nag-act") === "false") setNagActivo(false);
+      const un = localStorage.getItem("agenda-jito-ultimo-nag"); if (un) setUltimoNag(JSON.parse(un));
+    } catch (_) {}
+  }, []);
+
+  // Guardar
+  useEffect(() => { try { localStorage.setItem("agenda-jito", JSON.stringify(actividades)); } catch (_) {} }, [actividades]);
+  useEffect(() => { try { localStorage.setItem("agenda-jito-dark", String(dark)); } catch (_) {} }, [dark]);
+  useEffect(() => { try { localStorage.setItem("agenda-jito-nag-int", String(nagIntervalo)); } catch (_) {} }, [nagIntervalo]);
+  useEffect(() => { try { localStorage.setItem("agenda-jito-nag-act", String(nagActivo)); } catch (_) {} }, [nagActivo]);
+  useEffect(() => { try { localStorage.setItem("agenda-jito-ultimo-nag", JSON.stringify(ultimoNag)); } catch (_) {} }, [ultimoNag]);
+
+  // Reloj
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 15000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Permiso
+  useEffect(() => {
+    if (typeof Notification !== "undefined" && Notification.permission === "default") {
+      try { Notification.requestPermission(); } catch (_) {}
+    }
+  }, []);
+
+  // Recordatorios pre-evento
+  useEffect(() => {
+    const ahora = now.getTime();
+    actividades.forEach((a) => {
+      if (a.estado === "Completada" || a.estado === "Cancelada") return;
+      const min = getReminderMin(a.recordatorio);
+      if (min === 0) return;
+      const dt = parseDT(a).getTime();
+      const recordar = dt - min * 60000;
+      if (ahora >= recordar && ahora <= dt && !alertasMostradas.has(a.id)) {
+        setAlertasMostradas((prev) => new Set(prev).add(a.id));
+        setToast({ tipo: "alerta", titulo: "⏰ Recordatorio", mensaje: `${a.actividad} — ${a.hora}` });
+        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+          try { new Notification("Recordatorio Agenda JITO", { body: `${a.actividad} a las ${a.hora}` }); } catch (_) {}
+        }
+      }
+    });
+  }, [now, actividades, alertasMostradas]);
+
+  // Anti-procrastinación
+  useEffect(() => {
+    if (!nagActivo) return;
+    const ahora = now.getTime();
+    const intervaloMs = nagIntervalo * 60000;
+    const vencidasPendientes = actividades.filter((a) => {
+      if (a.estado === "Completada" || a.estado === "Cancelada") return false;
+      return parseDT(a).getTime() < ahora;
+    });
+    vencidasPendientes.forEach((a) => {
+      const ultimo = ultimoNag[a.id] || 0;
+      if (ahora - ultimo >= intervaloMs) {
+        const minVencido = Math.floor((ahora - parseDT(a).getTime()) / 60000);
+        let texto;
+        if (minVencido < 60) texto = `vencida hace ${minVencido} min`;
+        else if (minVencido < 1440) texto = `vencida hace ${Math.floor(minVencido / 60)} h`;
+        else texto = `vencida hace ${Math.floor(minVencido / 1440)} días`;
+        const nivel = minVencido < 30 ? 0 : minVencido < 120 ? 1 : minVencido < 1440 ? 2 : 3;
+        const titulos = ["⏰ Pendiente", "⚠️ Llevás rato sin hacerlo", "🚨 Esto se está atrasando", "🔥 ¡Vencida desde hace mucho!"];
+        const mensajes = [
+          `${a.actividad} (${texto})`,
+          `${a.actividad} — todavía pendiente, ${texto}`,
+          `${a.actividad} — no procrastines, ${texto}`,
+          `${a.actividad} — urgente revisar, ${texto}`,
+        ];
+        setToast({ tipo: "alerta", titulo: titulos[nivel], mensaje: mensajes[nivel] });
+        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+          try {
+            new Notification(titulos[nivel], { body: mensajes[nivel], tag: `nag-${a.id}`, requireInteraction: nivel >= 2 });
+          } catch (_) {}
+        }
+        setUltimoNag((prev) => ({ ...prev, [a.id]: ahora }));
+      }
+    });
+  }, [now, actividades, nagActivo, nagIntervalo, ultimoNag]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  const stats = useMemo(() => {
+    const hoyStr = toYMD(now);
+    const en7 = new Date(now); en7.setDate(en7.getDate() + 7);
+    let hoy = 0, vencidas = 0, prox7 = 0, completadas = 0, pendientes = 0, enProc = 0;
+    const porCat = {};
+    actividades.forEach((a) => {
+      const dt = parseDT(a);
+      if (a.estado !== "Completada" && a.estado !== "Cancelada") {
+        if (a.fecha === hoyStr) hoy++;
+        if (dt < now) vencidas++;
+        if (dt >= now && dt <= en7) prox7++;
+        if (a.estado === "Pendiente") pendientes++;
+        if (a.estado === "En proceso") enProc++;
+        porCat[a.categoria] = (porCat[a.categoria] || 0) + 1;
+      }
+      if (a.estado === "Completada") completadas++;
+    });
+    return { hoy, vencidas, prox7, completadas, pendientes, enProc, porCat, total: actividades.length };
+  }, [actividades, now]);
+
+  const filtradas = useMemo(() => {
+    return actividades.filter((a) => {
+      if (filtroCat !== "Todas" && a.categoria !== filtroCat) return false;
+      if (filtroEstado !== "Todos" && a.estado !== filtroEstado) return false;
+      if (filtroPrio !== "Todas" && a.prioridad !== filtroPrio) return false;
+      if (busqueda.trim()) {
+        const q = busqueda.toLowerCase();
+        const txt = `${a.actividad} ${a.descripcion || ""} ${a.notas || ""} ${a.categoria}`.toLowerCase();
+        if (!txt.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [actividades, filtroCat, filtroEstado, filtroPrio, busqueda]);
+
+  const guardar = (data) => {
+    if (editando && editando.id) {
+      setActividades((prev) => prev.map((a) => (a.id === editando.id ? { ...data, id: editando.id } : a)));
+      setToast({ tipo: "ok", titulo: "Actualizada", mensaje: data.actividad });
+    } else {
+      const nueva = { ...data, id: nextId(actividades) };
+      setActividades((prev) => [...prev, nueva]);
+      setToast({ tipo: "ok", titulo: "Creada", mensaje: data.actividad });
+    }
+    setModalAbierto(false);
+    setEditando(null);
+  };
+  const eliminar = (id) => {
+    const a = actividades.find((x) => x.id === id);
+    setActividades((prev) => prev.filter((x) => x.id !== id));
+    setToast({ tipo: "ok", titulo: "Eliminada", mensaje: a?.actividad || "" });
+  };
+  const cambiarEstado = (id, estado) => {
+    setActividades((prev) => prev.map((a) => (a.id === id ? { ...a, estado } : a)));
+  };
+  const exportar = () => {
+    const blob = new Blob([JSON.stringify(actividades, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `agenda-jito-${toYMD(new Date())}.json`; a.click();
+    URL.revokeObjectURL(url);
+    setToast({ tipo: "ok", titulo: "Exportado", mensaje: "Respaldo JSON descargado" });
+  };
+  const importar = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (Array.isArray(data)) {
+          setActividades(data);
+          setToast({ tipo: "ok", titulo: "Importado", mensaje: `${data.length} actividades` });
+        }
+      } catch (_) { setToast({ tipo: "err", titulo: "Error", mensaje: "Archivo JSON inválido" }); }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const T = dark ? {
+    bg: "bg-slate-900", panel: "bg-slate-800", border: "border-slate-700",
+    text: "text-slate-100", textMuted: "text-slate-400", input: "bg-slate-700 border-slate-600 text-slate-100",
+    hover: "hover:bg-slate-700", card: "bg-slate-800",
+  } : {
+    bg: "bg-slate-50", panel: "bg-white", border: "border-slate-200",
+    text: "text-slate-900", textMuted: "text-slate-500", input: "bg-white border-slate-300 text-slate-900",
+    hover: "hover:bg-slate-100", card: "bg-white",
+  };
+
+  const TABS = [
+    { id: "dashboard", label: "Dashboard", I: IconBars },
+    { id: "hoy",       label: "Hoy",       I: IconSun },
+    { id: "semana",    label: "Semana",    I: IconCalDays },
+    { id: "mes",       label: "Mes",       I: IconGrid },
+    { id: "lista",     label: "Lista",     I: IconList },
+  ];
+
+  return (
+    <div className={`min-h-screen ${T.bg} ${T.text} transition-colors`}>
+      {/* HEADER */}
+      <header className={`${T.panel} border-b ${T.border} sticky top-0 z-30 shadow-sm`}>
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-purple-600 grid place-items-center text-white">
+              <IconSpark w={18} h={18} />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold leading-tight">Agenda JITO</h1>
+              <p className={`text-xs ${T.textMuted}`}>{now.toLocaleDateString("es-CR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · {now.toLocaleTimeString("es-CR", { hour: "2-digit", minute: "2-digit" })}</p>
+            </div>
+          </div>
+          <div className="flex-1 min-w-[200px] max-w-md ml-auto relative">
+            <span className={`absolute left-3 top-1/2 -translate-y-1/2 ${T.textMuted}`}><IconSearch w={14} h={14} /></span>
+            <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar actividad…"
+              className={`w-full pl-9 pr-3 py-2 rounded-lg border ${T.input} focus:outline-none focus:ring-2 focus:ring-purple-400`} />
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setPanelNagAbierto(true)} title="Anti-procrastinación"
+              className={`relative p-2 rounded-lg border ${T.border} ${T.hover} ${nagActivo ? "text-purple-600" : ""}`}>
+              {nagActivo ? <IconBellRing /> : <IconBell />}
+              {stats.vencidas > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full grid place-items-center animate-pulse">{stats.vencidas}</span>
+              )}
+            </button>
+            <button onClick={exportar} title="Exportar JSON" className={`p-2 rounded-lg border ${T.border} ${T.hover}`}><IconDownload /></button>
+            <button onClick={() => fileInputRef.current?.click()} title="Importar JSON" className={`p-2 rounded-lg border ${T.border} ${T.hover}`}><IconUpload /></button>
+            <input ref={fileInputRef} type="file" accept=".json" onChange={importar} className="hidden" />
+            <button onClick={() => setDark(!dark)} title="Tema" className={`p-2 rounded-lg border ${T.border} ${T.hover}`}>{dark ? <IconSun /> : <IconMoon />}</button>
+            <button onClick={() => { setEditando(null); setModalAbierto(true); }}
+              className="px-3 py-2 rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 text-white font-medium flex items-center gap-2 hover:opacity-90">
+              <IconPlus /> Nueva
+            </button>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 pb-2 flex gap-1 overflow-x-auto">
+          {TABS.map((t) => {
+            const active = vista === t.id;
+            const I = t.I;
+            return (
+              <button key={t.id} onClick={() => setVista(t.id)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 whitespace-nowrap transition ${
+                  active ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white" : `${T.hover} ${T.textMuted}`}`}>
+                <I /> {t.label}
+              </button>
+            );
+          })}
+        </div>
+      </header>
+
+      {/* BANNER NAG */}
+      {stats.vencidas > 0 && nagActivo && (
+        <div className="max-w-7xl mx-auto px-4 pt-3">
+          <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl px-4 py-3 flex items-center gap-3 shadow-md">
+            <IconAlert />
+            <div className="flex-1 text-sm">
+              <strong>{stats.vencidas} {stats.vencidas === 1 ? "actividad vencida" : "actividades vencidas"}</strong> sin completar. Te voy a recordar cada {nagIntervalo} min.
+            </div>
+            <button onClick={() => setPanelNagAbierto(true)} className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-medium">Configurar</button>
+          </div>
+        </div>
+      )}
+
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        {vista === "dashboard" && <Dashboard stats={stats} actividades={actividades} T={T} now={now} onAbrir={(a) => { setEditando(a); setModalAbierto(true); }} />}
+        {vista === "hoy" && (<>
+          <Filtros T={T} filtroCat={filtroCat} setFiltroCat={setFiltroCat} filtroEstado={filtroEstado} setFiltroEstado={setFiltroEstado} filtroPrio={filtroPrio} setFiltroPrio={setFiltroPrio} />
+          <VistaHoy actividades={filtradas} now={now} T={T} onEdit={(a) => { setEditando(a); setModalAbierto(true); }} onDelete={eliminar} onEstado={cambiarEstado} />
+        </>)}
+        {vista === "semana" && <VistaSemana actividades={filtradas} T={T} navDate={navDate} setNavDate={setNavDate} now={now} onEdit={(a) => { setEditando(a); setModalAbierto(true); }} />}
+        {vista === "mes" && <VistaMes actividades={filtradas} T={T} navDate={navDate} setNavDate={setNavDate} now={now} onEdit={(a) => { setEditando(a); setModalAbierto(true); }} onNuevo={(fecha) => { setEditando({ fecha, hora: "09:00", estado: "Pendiente", prioridad: "Media", categoria: "Personal", recordatorio: "30 min antes" }); setModalAbierto(true); }} />}
+        {vista === "lista" && (<>
+          <Filtros T={T} filtroCat={filtroCat} setFiltroCat={setFiltroCat} filtroEstado={filtroEstado} setFiltroEstado={setFiltroEstado} filtroPrio={filtroPrio} setFiltroPrio={setFiltroPrio} />
+          <VistaLista actividades={filtradas} T={T} onEdit={(a) => { setEditando(a); setModalAbierto(true); }} onDelete={eliminar} onEstado={cambiarEstado} now={now} />
+        </>)}
+      </main>
+
+      {panelNagAbierto && (
+        <PanelNag T={T} nagActivo={nagActivo} setNagActivo={setNagActivo} nagIntervalo={nagIntervalo} setNagIntervalo={setNagIntervalo}
+          vencidas={actividades.filter((a) => a.estado !== "Completada" && a.estado !== "Cancelada" && parseDT(a).getTime() < now.getTime()).sort((a, b) => parseDT(a) - parseDT(b))}
+          onClose={() => setPanelNagAbierto(false)} onEstado={cambiarEstado}
+          onEdit={(a) => { setEditando(a); setModalAbierto(true); setPanelNagAbierto(false); }}
+          onPedirPermiso={() => {
+            if (typeof Notification !== "undefined") {
+              try { Notification.requestPermission().then((p) => setToast({ tipo: p === "granted" ? "ok" : "err", titulo: p === "granted" ? "Permitido" : "Permiso denegado", mensaje: "Notificaciones del navegador" })); } catch (_) {}
+            }
+          }} />
+      )}
+
+      {modalAbierto && <Modal T={T} editando={editando} onClose={() => { setModalAbierto(false); setEditando(null); }} onGuardar={guardar} />}
+
+      {toast && (
+        <div className="fixed bottom-4 right-4 z-50 animate-fadeIn">
+          <div className={`${toast.tipo === "alerta" ? "bg-purple-600" : toast.tipo === "err" ? "bg-red-600" : "bg-emerald-600"} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 max-w-sm`}>
+            {toast.tipo === "alerta" ? <IconBellRing /> : toast.tipo === "err" ? <IconX /> : <IconCheck />}
+            <div>
+              <div className="font-semibold text-sm">{toast.titulo}</div>
+              <div className="text-xs opacity-90">{toast.mensaje}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <footer className={`max-w-7xl mx-auto px-4 py-6 text-center text-xs ${T.textMuted}`}>
+        Datos guardados en este navegador (localStorage) · Total: {stats.total} actividades · Exportá JSON para respaldo
+      </footer>
+    </div>
+  );
+}
+
+/* ============================
+   Subcomponentes
+   ============================ */
+function Filtros({ T, filtroCat, setFiltroCat, filtroEstado, setFiltroEstado, filtroPrio, setFiltroPrio }) {
+  return (
+    <div className={`${T.panel} border ${T.border} rounded-xl p-3 mb-4 flex flex-wrap gap-2 items-center`}>
+      <span className={T.textMuted}><IconFilter /></span>
+      <select value={filtroCat} onChange={(e) => setFiltroCat(e.target.value)} className={`px-3 py-1.5 rounded-lg border text-sm ${T.input}`}>
+        <option value="Todas">Todas las categorías</option>
+        {CATEGORIAS.map((c) => <option key={c.nombre}>{c.nombre}</option>)}
+      </select>
+      <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} className={`px-3 py-1.5 rounded-lg border text-sm ${T.input}`}>
+        <option value="Todos">Todos los estados</option>
+        {ESTADOS.map((e) => <option key={e}>{e}</option>)}
+      </select>
+      <select value={filtroPrio} onChange={(e) => setFiltroPrio(e.target.value)} className={`px-3 py-1.5 rounded-lg border text-sm ${T.input}`}>
+        <option value="Todas">Todas las prioridades</option>
+        {PRIORIDADES.map((p) => <option key={p}>{p}</option>)}
+      </select>
+      <button onClick={() => { setFiltroCat("Todas"); setFiltroEstado("Todos"); setFiltroPrio("Todas"); }}
+        className={`px-3 py-1.5 rounded-lg border text-sm ${T.border} ${T.hover} ${T.textMuted}`}>Limpiar</button>
+    </div>
+  );
+}
+
+function Dashboard({ stats, actividades, T, now, onAbrir }) {
+  const hoyStr = toYMD(now);
+  const hoy = actividades.filter((a) => a.fecha === hoyStr && a.estado !== "Completada" && a.estado !== "Cancelada");
+  const prox = actividades
+    .filter((a) => a.estado !== "Completada" && a.estado !== "Cancelada" && parseDT(a) >= now)
+    .sort((a, b) => parseDT(a) - parseDT(b))
+    .slice(0, 5);
+  const tarjetas = [
+    { label: "Hoy",             valor: stats.hoy,         color: "from-pink-500 to-rose-500",     I: IconSun },
+    { label: "Vencidas",        valor: stats.vencidas,    color: "from-red-500 to-orange-500",    I: IconAlert },
+    { label: "Próximas 7 días", valor: stats.prox7,       color: "from-purple-500 to-indigo-500", I: IconCalDays },
+    { label: "En proceso",      valor: stats.enProc,      color: "from-blue-500 to-cyan-500",     I: IconPlay },
+    { label: "Pendientes",      valor: stats.pendientes,  color: "from-amber-500 to-yellow-500",  I: IconCircle },
+    { label: "Completadas",     valor: stats.completadas, color: "from-emerald-500 to-green-500", I: IconCheckCirc },
+  ];
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {tarjetas.map((t) => {
+          const I = t.I;
+          return (
+            <div key={t.label} className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${t.color} text-white p-4 shadow-md`}>
+              <div className="mb-2 opacity-90"><I w={22} h={22} /></div>
+              <div className="text-3xl font-bold">{t.valor}</div>
+              <div className="text-xs opacity-90">{t.label}</div>
+              <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-white/10 rounded-full" />
+            </div>
+          );
+        })}
+      </div>
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className={`${T.panel} border ${T.border} rounded-xl p-4`}>
+          <h2 className="font-semibold mb-3 flex items-center gap-2"><span className="text-amber-500"><IconSun /></span> Hoy</h2>
+          {hoy.length === 0 ? <p className={`text-sm ${T.textMuted}`}>No hay actividades para hoy 🎉</p> :
+            <div className="space-y-2">{hoy.map((a) => {
+              const c = getCat(a.categoria);
+              return (
+                <div key={a.id} onClick={() => onAbrir(a)} className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer ${T.hover} border ${T.border}`}>
+                  <div className={`w-1 self-stretch rounded-full ${c.color}`} />
+                  <span className="opacity-60"><IconClock w={14} h={14} /></span>
+                  <span className="font-mono text-sm">{a.hora}</span>
+                  <span className="flex-1 text-sm truncate">{a.actividad}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full border ${prioBadge(a.prioridad)}`}>{a.prioridad}</span>
+                </div>
+              );
+            })}</div>}
+        </div>
+        <div className={`${T.panel} border ${T.border} rounded-xl p-4`}>
+          <h2 className="font-semibold mb-3 flex items-center gap-2"><span className="text-purple-500"><IconCalDays /></span> Próximas</h2>
+          {prox.length === 0 ? <p className={`text-sm ${T.textMuted}`}>Sin actividades próximas</p> :
+            <div className="space-y-2">{prox.map((a) => {
+              const c = getCat(a.categoria);
+              return (
+                <div key={a.id} onClick={() => onAbrir(a)} className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer ${T.hover} border ${T.border}`}>
+                  <div className={`w-1 self-stretch rounded-full ${c.color}`} />
+                  <div className="text-xs text-center">
+                    <div className="font-mono">{new Date(a.fecha + "T00:00").toLocaleDateString("es-CR", { day: "2-digit", month: "short" })}</div>
+                    <div className="opacity-60">{a.hora}</div>
+                  </div>
+                  <span className="flex-1 text-sm truncate">{a.actividad}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${c.bg} ${c.text}`}>{a.categoria}</span>
+                </div>
+              );
+            })}</div>}
+        </div>
+      </div>
+      <div className={`${T.panel} border ${T.border} rounded-xl p-4`}>
+        <h2 className="font-semibold mb-3 flex items-center gap-2"><span className="text-cyan-500"><IconGrid /></span> Pendientes por categoría</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {CATEGORIAS.map((c) => {
+            const n = stats.porCat[c.nombre] || 0;
+            return (
+              <div key={c.nombre} className={`p-3 rounded-lg ${c.bg} border ${c.ring} ring-1`}>
+                <div className={`text-2xl font-bold ${c.text}`}>{n}</div>
+                <div className={`text-xs ${c.text} opacity-80`}>{c.nombre}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VistaHoy({ actividades, now, T, onEdit, onDelete, onEstado }) {
+  const hoyStr = toYMD(now);
+  const lista = actividades.filter((a) => a.fecha === hoyStr).sort((a, b) => a.hora.localeCompare(b.hora));
+  if (lista.length === 0) return (
+    <div className={`${T.panel} border ${T.border} rounded-xl p-10 text-center`}>
+      <div className="mx-auto mb-3 text-amber-400 w-fit"><IconSun w={48} h={48} /></div>
+      <h3 className="font-semibold mb-1">¡Día libre!</h3>
+      <p className={`text-sm ${T.textMuted}`}>No hay actividades programadas para hoy.</p>
+    </div>
+  );
+  return <div className="space-y-2">{lista.map((a) => <Tarjeta key={a.id} a={a} T={T} onEdit={onEdit} onDelete={onDelete} onEstado={onEstado} now={now} />)}</div>;
+}
+
+function VistaLista({ actividades, T, onEdit, onDelete, onEstado, now }) {
+  const ordenadas = [...actividades].sort((a, b) => parseDT(a) - parseDT(b));
+  const grupos = {};
+  ordenadas.forEach((a) => { grupos[a.fecha] = grupos[a.fecha] || []; grupos[a.fecha].push(a); });
+  const fechas = Object.keys(grupos).sort();
+  if (fechas.length === 0) return (
+    <div className={`${T.panel} border ${T.border} rounded-xl p-10 text-center`}>
+      <div className="mx-auto mb-3 opacity-40 w-fit"><IconList w={48} h={48} /></div>
+      <p className={T.textMuted}>Sin actividades que coincidan con los filtros.</p>
+    </div>
+  );
+  return (
+    <div className="space-y-4">
+      {fechas.map((f) => {
+        const d = new Date(f + "T00:00");
+        const esHoy = f === toYMD(now);
+        return (
+          <div key={f}>
+            <h3 className={`text-sm font-semibold mb-2 ${esHoy ? "text-pink-500" : T.textMuted}`}>
+              {d.toLocaleDateString("es-CR", { weekday: "long", day: "numeric", month: "long" })}
+              {esHoy && <span className="ml-2 px-2 py-0.5 text-[10px] bg-pink-100 text-pink-700 rounded-full">Hoy</span>}
+            </h3>
+            <div className="space-y-2">{grupos[f].map((a) => <Tarjeta key={a.id} a={a} T={T} onEdit={onEdit} onDelete={onDelete} onEstado={onEstado} now={now} />)}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function Tarjeta({ a, T, onEdit, onDelete, onEstado, now }) {
+  const c = getCat(a.categoria);
+  const dt = parseDT(a);
+  const vencida = dt < now && a.estado !== "Completada" && a.estado !== "Cancelada";
+  return (
+    <div className={`${T.card} border ${T.border} rounded-xl p-3 flex items-stretch gap-3 hover:shadow-md transition ${vencida ? "ring-2 ring-red-300" : ""}`}>
+      <div className={`w-1.5 rounded-full ${c.color}`} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap mb-1">
+          <span className={`text-xs px-2 py-0.5 rounded-full ${c.bg} ${c.text} font-medium`}>{a.categoria}</span>
+          <span className={`text-xs px-2 py-0.5 rounded-full border ${prioBadge(a.prioridad)}`}>{a.prioridad}</span>
+          <span className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${estadoBadge(a.estado)}`}>{estadoIcon(a.estado)} {a.estado}</span>
+          {vencida && <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">Vencida</span>}
+          {a.recordatorio && a.recordatorio !== "Sin recordatorio" && (
+            <span className={`text-xs ${T.textMuted} flex items-center gap-1`}><IconBell w={12} h={12} /> {a.recordatorio}</span>
+          )}
+        </div>
+        <h3 className={`font-semibold ${a.estado === "Completada" ? "line-through opacity-60" : ""}`}>{a.actividad}</h3>
+        {a.descripcion && <p className={`text-sm ${T.textMuted} mt-1`}>{a.descripcion}</p>}
+        {a.notas && <p className={`text-xs ${T.textMuted} italic mt-1`}>📝 {a.notas}</p>}
+        <div className={`text-xs ${T.textMuted} mt-2 flex items-center gap-3 flex-wrap`}>
+          <span className="flex items-center gap-1"><IconCalendar w={12} h={12} /> {new Date(a.fecha + "T00:00").toLocaleDateString("es-CR")}</span>
+          <span className="flex items-center gap-1"><IconClock w={12} h={12} /> {a.hora}</span>
+          <span className="font-mono">{a.id}</span>
+        </div>
+      </div>
+      <div className="flex flex-col gap-1 items-end">
+        <select value={a.estado} onChange={(e) => onEstado(a.id, e.target.value)} className={`text-xs px-2 py-1 rounded border ${T.input}`}>
+          {ESTADOS.map((e) => <option key={e}>{e}</option>)}
+        </select>
+        <div className="flex gap-1">
+          <button onClick={() => onEdit(a)} className={`p-1.5 rounded-lg ${T.hover}`} title="Editar"><IconEdit /></button>
+          <button onClick={() => { if (confirm(`¿Eliminar "${a.actividad}"?`)) onDelete(a.id); }} className={`p-1.5 rounded-lg ${T.hover} text-red-500`} title="Eliminar"><IconTrash /></button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VistaSemana({ actividades, T, navDate, setNavDate, now, onEdit }) {
+  const d = new Date(navDate);
+  const day = d.getDay();
+  const offset = day === 0 ? -6 : 1 - day;
+  const lunes = new Date(d); lunes.setDate(d.getDate() + offset); lunes.setHours(0, 0, 0, 0);
+  const dias = Array.from({ length: 7 }, (_, i) => { const x = new Date(lunes); x.setDate(lunes.getDate() + i); return x; });
+  const horas = Array.from({ length: 17 }, (_, i) => i + 6);
+  const moverSemana = (delta) => { const n = new Date(navDate); n.setDate(navDate.getDate() + delta * 7); setNavDate(n); };
+  return (
+    <div className={`${T.panel} border ${T.border} rounded-xl overflow-hidden`}>
+      <div className={`flex items-center justify-between p-3 border-b ${T.border}`}>
+        <button onClick={() => moverSemana(-1)} className={`p-2 rounded-lg ${T.hover}`}><IconChevLeft /></button>
+        <div className="font-semibold text-sm">Semana del {lunes.toLocaleDateString("es-CR", { day: "numeric", month: "short" })} al {dias[6].toLocaleDateString("es-CR", { day: "numeric", month: "short", year: "numeric" })}</div>
+        <div className="flex gap-1">
+          <button onClick={() => setNavDate(new Date())} className={`px-3 py-1 text-xs rounded-lg ${T.hover} border ${T.border}`}>Hoy</button>
+          <button onClick={() => moverSemana(1)} className={`p-2 rounded-lg ${T.hover}`}><IconChevRight /></button>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <div className="grid min-w-[800px]" style={{ gridTemplateColumns: "60px repeat(7, minmax(120px, 1fr))" }}>
+          <div className={`p-2 border-b border-r ${T.border} text-xs ${T.textMuted}`}>Hora</div>
+          {dias.map((dd, i) => {
+            const hoy = toYMD(dd) === toYMD(now);
+            return (
+              <div key={i} className={`p-2 border-b border-r ${T.border} text-center ${hoy ? "bg-pink-50 text-pink-700" : T.textMuted}`}>
+                <div className="text-xs">{DIAS[i]}</div>
+                <div className={`text-lg font-bold ${hoy ? "" : T.text}`}>{dd.getDate()}</div>
+              </div>
+            );
+          })}
+          {horas.map((h) => (
+            <Fragment key={h}>
+              <div className={`p-1 border-b border-r ${T.border} text-xs ${T.textMuted} text-right pr-2`}>{pad(h)}:00</div>
+              {dias.map((dd, i) => {
+                const ymd = toYMD(dd);
+                const actHora = actividades.filter((a) => a.fecha === ymd && parseInt(a.hora.split(":")[0], 10) === h);
+                return (
+                  <div key={i} className={`p-1 border-b border-r ${T.border} min-h-[50px] space-y-1`}>
+                    {actHora.map((a) => {
+                      const c = getCat(a.categoria);
+                      return (
+                        <div key={a.id} onClick={() => onEdit(a)}
+                          className={`text-[10px] px-1.5 py-1 rounded cursor-pointer ${c.bg} ${c.text} border-l-2 truncate`}
+                          style={{ borderLeftColor: "currentColor" }} title={a.actividad}>
+                          <div className="font-bold">{a.hora}</div>
+                          <div className="truncate">{a.actividad}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </Fragment>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VistaMes({ actividades, T, navDate, setNavDate, now, onEdit, onNuevo }) {
+  const year = navDate.getFullYear();
+  const month = navDate.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startDay = firstDay.getDay();
+  const startOffset = startDay === 0 ? 6 : startDay - 1;
+  const celdas = [];
+  for (let i = 0; i < startOffset; i++) celdas.push(null);
+  for (let i = 1; i <= lastDay.getDate(); i++) celdas.push(new Date(year, month, i));
+  while (celdas.length % 7 !== 0) celdas.push(null);
+  const moverMes = (delta) => setNavDate(new Date(year, month + delta, 1));
+  const hoyStr = toYMD(now);
+  return (
+    <div className={`${T.panel} border ${T.border} rounded-xl overflow-hidden`}>
+      <div className={`flex items-center justify-between p-3 border-b ${T.border}`}>
+        <button onClick={() => moverMes(-1)} className={`p-2 rounded-lg ${T.hover}`}><IconChevLeft /></button>
+        <div className="font-semibold">{MESES[month]} {year}</div>
+        <div className="flex gap-1">
+          <button onClick={() => setNavDate(new Date())} className={`px-3 py-1 text-xs rounded-lg ${T.hover} border ${T.border}`}>Hoy</button>
+          <button onClick={() => moverMes(1)} className={`p-2 rounded-lg ${T.hover}`}><IconChevRight /></button>
+        </div>
+      </div>
+      <div className="grid grid-cols-7">
+        {DIAS.map((d) => <div key={d} className={`p-2 text-center text-xs font-semibold ${T.textMuted} border-b ${T.border}`}>{d.slice(0, 3)}</div>)}
+        {celdas.map((c, i) => {
+          if (!c) return <div key={i} className={`min-h-[100px] border-b border-r ${T.border} ${T.bg}`} />;
+          const ymd = toYMD(c);
+          const acts = actividades.filter((a) => a.fecha === ymd).sort((a, b) => a.hora.localeCompare(b.hora));
+          const esHoy = ymd === hoyStr;
+          return (
+            <div key={i} onDoubleClick={() => onNuevo(ymd)}
+              className={`min-h-[100px] p-1 border-b border-r ${T.border} ${esHoy ? "bg-pink-50/50" : ""} cursor-pointer hover:bg-slate-50/50`}>
+              <div className={`text-xs font-bold mb-1 ${esHoy ? "text-pink-600" : ""}`}>{c.getDate()}</div>
+              <div className="space-y-0.5">
+                {acts.slice(0, 3).map((a) => {
+                  const cc = getCat(a.categoria);
+                  return (
+                    <div key={a.id} onClick={(e) => { e.stopPropagation(); onEdit(a); }}
+                      className={`text-[10px] px-1 py-0.5 rounded ${cc.bg} ${cc.text} truncate`} title={`${a.hora} - ${a.actividad}`}>
+                      {a.hora} {a.actividad}
+                    </div>
+                  );
+                })}
+                {acts.length > 3 && <div className={`text-[10px] ${T.textMuted} px-1`}>+{acts.length - 3} más</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className={`p-2 text-[10px] ${T.textMuted} text-center`}>Doble clic en un día para crear actividad</div>
+    </div>
+  );
+}
+
+function PanelNag({ T, nagActivo, setNagActivo, nagIntervalo, setNagIntervalo, vencidas, onClose, onEstado, onEdit, onPedirPermiso }) {
+  const opciones = [5, 10, 15, 30, 60, 120];
+  const permiso = typeof Notification !== "undefined" ? Notification.permission : "unsupported";
+  return (
+    <div className="fixed inset-0 z-40 bg-black/50 grid place-items-center p-4 animate-fadeIn">
+      <div className={`${T.panel} ${T.text} rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto`}>
+        <div className={`flex items-center justify-between p-4 border-b ${T.border}`}>
+          <h2 className="font-bold text-lg flex items-center gap-2"><span className="text-purple-500"><IconBellRing /></span> Anti-procrastinación</h2>
+          <button onClick={onClose} className={`p-1.5 rounded-lg ${T.hover}`}><IconX /></button>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className={`flex items-center justify-between p-3 rounded-lg border ${T.border}`}>
+            <div>
+              <div className="font-medium text-sm">Recordatorios persistentes</div>
+              <div className={`text-xs ${T.textMuted}`}>Te notifico hasta que las completes</div>
+            </div>
+            <button onClick={() => setNagActivo(!nagActivo)} className={`relative w-12 h-6 rounded-full transition ${nagActivo ? "bg-purple-500" : "bg-slate-300"}`}>
+              <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition ${nagActivo ? "left-6" : "left-0.5"}`} />
+            </button>
+          </div>
+          <div>
+            <label className="text-xs font-medium">Cada cuánto recordarte (minutos)</label>
+            <div className="grid grid-cols-6 gap-1 mt-2">
+              {opciones.map((m) => (
+                <button key={m} onClick={() => setNagIntervalo(m)} disabled={!nagActivo}
+                  className={`py-2 rounded-lg text-sm font-medium transition ${
+                    nagIntervalo === m ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
+                    : `border ${T.border} ${T.hover} ${!nagActivo ? "opacity-40" : ""}`}`}>{m}</button>
+              ))}
+            </div>
+            <p className={`text-xs ${T.textMuted} mt-2`}>Se intensifica con el tiempo: tono normal → llevás rato → atrasada → 🔥 urgente</p>
+          </div>
+          <div className={`p-3 rounded-lg border ${T.border}`}>
+            <div className="flex items-center justify-between mb-1">
+              <div className="font-medium text-sm">Notificaciones del navegador</div>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${permiso === "granted" ? "bg-emerald-100 text-emerald-700" : permiso === "denied" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
+                {permiso === "granted" ? "Activadas" : permiso === "denied" ? "Bloqueadas" : "Pendiente"}
+              </span>
+            </div>
+            <p className={`text-xs ${T.textMuted} mb-2`}>Necesarias para que te avisen incluso si la pestaña está en segundo plano.</p>
+            {permiso !== "granted" && permiso !== "unsupported" && (
+              <button onClick={onPedirPermiso} className="text-xs px-3 py-1.5 bg-purple-500 text-white rounded-lg">Activar notificaciones</button>
+            )}
+            {permiso === "denied" && <p className="text-xs text-red-600 mt-1">Habilitalas desde la configuración del navegador.</p>}
+          </div>
+          <div>
+            <h3 className="font-semibold text-sm mb-2">{vencidas.length === 0 ? "Sin atrasos ✨" : `${vencidas.length} ${vencidas.length === 1 ? "actividad atrasada" : "actividades atrasadas"}`}</h3>
+            {vencidas.length === 0 ? <p className={`text-xs ${T.textMuted}`}>Estás al día. Bien hecho.</p> :
+              <div className="space-y-2 max-h-60 overflow-y-auto">{vencidas.map((a) => {
+                const c = getCat(a.categoria);
+                const min = Math.floor((Date.now() - parseDT(a).getTime()) / 60000);
+                const tiempo = min < 60 ? `${min} min` : min < 1440 ? `${Math.floor(min / 60)} h` : `${Math.floor(min / 1440)} d`;
+                return (
+                  <div key={a.id} className={`p-2 rounded-lg border ${T.border} flex items-center gap-2`}>
+                    <div className={`w-1 self-stretch rounded-full ${c.color}`} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{a.actividad}</div>
+                      <div className={`text-xs ${T.textMuted}`}>Atrasada {tiempo} · {a.hora}</div>
+                    </div>
+                    <button onClick={() => onEstado(a.id, "Completada")} title="Marcar completada"
+                      className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200"><IconCheck /></button>
+                    <button onClick={() => onEdit(a)} title="Editar" className={`p-1.5 rounded-lg ${T.hover}`}><IconEdit /></button>
+                  </div>
+                );
+              })}</div>}
+          </div>
+        </div>
+        <div className={`flex justify-end p-4 border-t ${T.border}`}>
+          <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 text-white font-medium">Listo</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Modal({ T, editando, onClose, onGuardar }) {
+  const [form, setForm] = useState({
+    fecha: editando?.fecha || toYMD(new Date()),
+    hora: editando?.hora || "09:00",
+    actividad: editando?.actividad || "",
+    descripcion: editando?.descripcion || "",
+    categoria: editando?.categoria || "Personal",
+    prioridad: editando?.prioridad || "Media",
+    estado: editando?.estado || "Pendiente",
+    recordatorio: editando?.recordatorio || "30 min antes",
+    notas: editando?.notas || "",
+  });
+  const submit = (e) => {
+    e.preventDefault();
+    if (!form.actividad.trim()) return;
+    onGuardar(form);
+  };
+  return (
+    <div className="fixed inset-0 z-40 bg-black/50 grid place-items-center p-4 animate-fadeIn">
+      <form onSubmit={submit} className={`${T.panel} ${T.text} rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto`}>
+        <div className={`flex items-center justify-between p-4 border-b ${T.border}`}>
+          <h2 className="font-bold text-lg">{editando?.id ? "Editar actividad" : "Nueva actividad"}</h2>
+          <button type="button" onClick={onClose} className={`p-1.5 rounded-lg ${T.hover}`}><IconX /></button>
+        </div>
+        <div className="p-4 space-y-3">
+          <div>
+            <label className="text-xs font-medium">Actividad *</label>
+            <input required value={form.actividad} onChange={(e) => setForm({ ...form, actividad: e.target.value })}
+              className={`mt-1 w-full px-3 py-2 rounded-lg border ${T.input}`} placeholder="Ej: Revisar campaña" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium">Fecha *</label>
+              <input type="date" required value={form.fecha} onChange={(e) => setForm({ ...form, fecha: e.target.value })}
+                className={`mt-1 w-full px-3 py-2 rounded-lg border ${T.input}`} />
+            </div>
+            <div>
+              <label className="text-xs font-medium">Hora *</label>
+              <input type="time" required value={form.hora} onChange={(e) => setForm({ ...form, hora: e.target.value })}
+                className={`mt-1 w-full px-3 py-2 rounded-lg border ${T.input}`} />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium">Descripción</label>
+            <textarea value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} rows={2}
+              className={`mt-1 w-full px-3 py-2 rounded-lg border ${T.input}`} />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs font-medium">Categoría</label>
+              <select value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })}
+                className={`mt-1 w-full px-2 py-2 rounded-lg border text-sm ${T.input}`}>
+                {CATEGORIAS.map((c) => <option key={c.nombre}>{c.nombre}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium">Prioridad</label>
+              <select value={form.prioridad} onChange={(e) => setForm({ ...form, prioridad: e.target.value })}
+                className={`mt-1 w-full px-2 py-2 rounded-lg border text-sm ${T.input}`}>
+                {PRIORIDADES.map((p) => <option key={p}>{p}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium">Estado</label>
+              <select value={form.estado} onChange={(e) => setForm({ ...form, estado: e.target.value })}
+                className={`mt-1 w-full px-2 py-2 rounded-lg border text-sm ${T.input}`}>
+                {ESTADOS.map((e) => <option key={e}>{e}</option>)}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium">Recordatorio</label>
+            <select value={form.recordatorio} onChange={(e) => setForm({ ...form, recordatorio: e.target.value })}
+              className={`mt-1 w-full px-3 py-2 rounded-lg border ${T.input}`}>
+              {RECORDATORIOS.map((r) => <option key={r.label}>{r.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-medium">Notas</label>
+            <textarea value={form.notas} onChange={(e) => setForm({ ...form, notas: e.target.value })} rows={2}
+              className={`mt-1 w-full px-3 py-2 rounded-lg border ${T.input}`} />
+          </div>
+        </div>
+        <div className={`flex justify-end gap-2 p-4 border-t ${T.border}`}>
+          <button type="button" onClick={onClose} className={`px-4 py-2 rounded-lg border ${T.border} ${T.hover}`}>Cancelar</button>
+          <button type="submit" className="px-4 py-2 rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 text-white font-medium">
+            {editando?.id ? "Guardar cambios" : "Crear actividad"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(1100px 600px at 80% -10%, rgba(124, 131, 255, 0.1), transparent 60%),
+    radial-gradient(900px 600px at -10% 110%, rgba(39, 196, 152, 0.08), transparent 55%),
+    var(--bg, #0a0d13);
+  color: var(--txt, #e8eef6);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tema claro: solo el shell. Los coaches manejan su propio tema. */
+html.light {
+  color-scheme: light;
+}
+html.light body {
+  background:
+    radial-gradient(1100px 600px at 80% -10%, rgba(124, 131, 255, 0.08), transparent 60%),
+    radial-gradient(900px 600px at -10% 110%, rgba(39, 196, 152, 0.06), transparent 55%),
+    #f5f7fb;
+  color: #1b2430;
+}
+html.light {
+  --card: #ffffff;
+  --line: #e3e8f0;
+  --mut: #5d6b7d;
+}
+
+/* Variables que usan las utilidades shell-* abajo. */
+html {
+  --card: #141a23;
+  --line: #252e3a;
+  --mut: #8b97a7;
+}
+
+@layer components {
+  .shell-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+  }
+  .shell-muted {
+    color: var(--mut);
+  }
+  .shell-border {
+    border-color: var(--line);
+  }
+  /* Respeta el área segura en móvil (notch / barra inferior). */
+  .safe-b {
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+  }
+  .safe-t {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Render del markdown de los análisis de IA. */
+.ai-md h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 1rem 0 0.35rem;
+}
+.ai-md h3:first-child {
+  margin-top: 0;
+}
+.ai-md h4 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 0.8rem 0 0.3rem;
+}
+.ai-md p {
+  margin: 0.4rem 0;
+}
+.ai-md ul,
+.ai-md ol {
+  margin: 0.4rem 0;
+  padding-left: 1.2rem;
+}
+.ai-md li {
+  margin: 0.25rem 0;
+}
+.ai-md ul {
+  list-style: disc;
+}
+.ai-md ol {
+  list-style: decimal;
+}
+.ai-md strong {
+  color: var(--txt, #e8eef6);
+  font-weight: 700;
+}
+.ai-md code {
+  background: var(--card2, rgba(255, 255, 255, 0.08));
+  padding: 1px 5px;
+  border-radius: 5px;
+  font-size: 0.85em;
+}
+
+/* Oculta scrollbars horizontales de chips de categoría. */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

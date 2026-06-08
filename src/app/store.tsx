@@ -1,0 +1,135 @@
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode
+} from "react";
+import type { RecentEntry, Theme, UserPrefs } from "../types";
+import * as db from "../lib/storage";
+
+type Store = {
+  ready: boolean;
+  prefs: UserPrefs;
+  favorites: string[];
+  recents: RecentEntry[];
+  setTheme: (t: Theme) => void;
+  toggleTheme: () => void;
+  isFavorite: (coachId: string) => boolean;
+  toggleFavorite: (coachId: string) => void;
+  registerOpen: (coachId: string) => void;
+  finishOnboarding: () => void;
+};
+
+const StoreContext = createContext<Store | null>(null);
+
+function applyThemeClass(theme: Theme) {
+  const root = document.documentElement;
+  root.classList.toggle("dark", theme === "dark");
+  root.classList.toggle("light", theme === "light");
+}
+
+export function StoreProvider({ children }: { children: ReactNode }) {
+  const [ready, setReady] = useState(false);
+  const [prefs, setPrefsState] = useState<UserPrefs>(db.DEFAULT_PREFS);
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [recents, setRecents] = useState<RecentEntry[]>([]);
+
+  // Carga inicial desde IndexedDB.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const [p, f, r] = await Promise.all([
+        db.getPrefs(),
+        db.getFavorites(),
+        db.getRecents()
+      ]);
+      if (!alive) return;
+      setPrefsState(p);
+      applyThemeClass(p.theme);
+      setFavorites(f);
+      setRecents(r);
+      setReady(true);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const setTheme = useCallback((t: Theme) => {
+    setPrefsState((prev) => {
+      const next = { ...prev, theme: t };
+      applyThemeClass(t);
+      void db.setPrefs(next);
+      return next;
+    });
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setPrefsState((prev) => {
+      const t: Theme = prev.theme === "dark" ? "light" : "dark";
+      const next = { ...prev, theme: t };
+      applyThemeClass(t);
+      void db.setPrefs(next);
+      return next;
+    });
+  }, []);
+
+  const toggleFavorite = useCallback((coachId: string) => {
+    void db.toggleFavorite(coachId).then(setFavorites);
+  }, []);
+
+  const isFavorite = useCallback(
+    (coachId: string) => favorites.includes(coachId),
+    [favorites]
+  );
+
+  const registerOpen = useCallback((coachId: string) => {
+    void db.pushRecent(coachId).then(setRecents);
+  }, []);
+
+  const finishOnboarding = useCallback(() => {
+    setPrefsState((prev) => {
+      const next = { ...prev, onboardingDone: true };
+      void db.setPrefs(next);
+      return next;
+    });
+  }, []);
+
+  const value = useMemo<Store>(
+    () => ({
+      ready,
+      prefs,
+      favorites,
+      recents,
+      setTheme,
+      toggleTheme,
+      isFavorite,
+      toggleFavorite,
+      registerOpen,
+      finishOnboarding
+    }),
+    [
+      ready,
+      prefs,
+      favorites,
+      recents,
+      setTheme,
+      toggleTheme,
+      isFavorite,
+      toggleFavorite,
+      registerOpen,
+      finishOnboarding
+    ]
+  );
+
+  return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
+}
+
+export function useStore(): Store {
+  const ctx = useContext(StoreContext);
+  if (!ctx) throw new Error("useStore debe usarse dentro de <StoreProvider>");
+  return ctx;
+}
