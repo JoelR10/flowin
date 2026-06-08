@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "../app/store";
+import { useAuth } from "../app/auth";
+import { supabaseEnabled } from "../lib/supabase";
 import {
   MODELS,
   PROVIDERS,
@@ -13,6 +15,7 @@ import {
 
 export default function Ajustes() {
   const { prefs, toggleTheme } = useStore();
+  const { email, signOut } = useAuth();
   const navigate = useNavigate();
   const dark = prefs.theme === "dark";
 
@@ -252,6 +255,22 @@ export default function Ajustes() {
             </div>
           )}
         </div>
+
+        {/* Cuenta (M6) — solo si Supabase está configurado */}
+        {supabaseEnabled && email && (
+          <div className="shell-card flex items-center justify-between rounded-2xl p-4">
+            <div className="min-w-0 pr-3">
+              <p className="font-semibold">Cuenta</p>
+              <p className="shell-muted truncate text-sm">{email}</p>
+            </div>
+            <button
+              onClick={() => void signOut()}
+              className="shrink-0 rounded-xl border border-red-500/40 px-3 py-2 text-sm font-semibold text-red-400"
+            >
+              Cerrar sesión
+            </button>
+          </div>
+        )}
 
         <Row label="Acerca de Flowin" emoji="ℹ️" onClick={() => navigate("/acerca")} />
       </div>

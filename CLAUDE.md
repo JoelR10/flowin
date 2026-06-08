@@ -95,6 +95,20 @@ Cero cambios en el shell.
 - **Subpath** (p.ej. `/flowin/`): además setear `base: '/flowin/'` en `vite.config.ts` y rebuild.
 - ChatGPT en producción necesita el server desplegado (Node host o serverless) y la `proxyUrl` apuntándole.
 
+## Cuentas + nube + monitoreo (M6, env-gated)
+- **Supabase Auth (login obligatorio email+contraseña)** + sync por usuario. Activado solo si están
+  `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` (ver `.env.example`). Sin ellas → la app corre en **modo local**
+  (sin login, como el MVP). `src/lib/supabase.ts` (`supabaseEnabled`), `src/app/auth.tsx` (AuthProvider),
+  `src/components/AuthGate.tsx` + `AuthScreen.tsx`. Orden en `main.tsx`: ErrorBoundary → Auth → Store → Router.
+- **Sync (`src/lib/sync.ts`):** tabla `user_state` (RLS: `auth.uid()=user_id` → nadie ve datos ajenos).
+  Guarda prefs/favoritos/recientes + el blob de cada coach. NO sube las API keys de IA (quedan locales).
+  Pull al iniciar sesión (si vacío, sube lo local); push debounced desde el store (cambios) y CoachView (salir).
+- **SQL:** `supabase/migrations/0001_init.sql` (tabla + RLS + perfiles + trigger). Correr en Supabase → SQL Editor.
+- **Monitoreo (Sentry, opcional):** cliente `src/lib/monitoring.ts` (`VITE_SENTRY_DSN`), server `SENTRY_DSN`. Sin DSN = no-op.
+- **Setup para activar M6:** crear proyecto Supabase → copiar URL+anon key a `.env` (raíz) → correr el SQL →
+  (en Auth settings, decidir si exigís confirmación por email) → `npm run build`. Sentry: crear proyecto React + poner DSN.
+- Pendiente: rate-limit del proxy en multi-instancia → Redis (hoy en memoria, 1 instancia).
+
 ## Estado actual
 M0–M3 hechos: catálogo + búsqueda/filtro, abrir coach en iframe, volver con scroll, favoritos,
 recientes/continuar, tema claro/oscuro, onboarding, persistencia local, PWA instalable + offline.

@@ -9,6 +9,7 @@ import {
 } from "react";
 import type { RecentEntry, Theme, UserPrefs } from "../types";
 import * as db from "../lib/storage";
+import { schedulePush } from "../lib/sync";
 
 type Store = {
   ready: boolean;
@@ -57,6 +58,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       alive = false;
     };
   }, []);
+
+  // Sync a la nube (M6): al cambiar prefs/favoritos/recientes, push debounced.
+  // No-op si no hay sesión (modo local).
+  useEffect(() => {
+    if (ready) schedulePush();
+  }, [ready, prefs, favorites, recents]);
 
   const setTheme = useCallback((t: Theme) => {
     setPrefsState((prev) => {

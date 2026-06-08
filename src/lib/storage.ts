@@ -41,6 +41,17 @@ export async function markOnboardingDone(): Promise<void> {
   await setPrefs({ ...p, onboardingDone: true });
 }
 
+// ---- Sync (M6): volcar estado de la nube al almacenamiento local ----
+export async function restoreShell(s: {
+  prefs?: UserPrefs;
+  favorites?: string[];
+  recents?: RecentEntry[];
+}): Promise<void> {
+  if (s.prefs) await localforage.setItem(K.prefs, s.prefs);
+  if (Array.isArray(s.favorites)) await localforage.setItem(K.favorites, s.favorites);
+  if (Array.isArray(s.recents)) await localforage.setItem(K.recents, s.recents);
+}
+
 // ---- Favoritos (RF-05) ----
 export async function getFavorites(): Promise<string[]> {
   return (await localforage.getItem<string[]>(K.favorites)) ?? [];

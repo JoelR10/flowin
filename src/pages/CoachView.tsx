@@ -5,6 +5,7 @@ import { useStore } from "../app/store";
 import { listenToCoach } from "../lib/coachBridge";
 import { aiReady, analyzeCoach } from "../lib/ai";
 import { AnalysisModal } from "../components/AnalysisModal";
+import { schedulePush } from "../lib/sync";
 
 export default function CoachView() {
   const { slug } = useParams();
@@ -21,6 +22,9 @@ export default function CoachView() {
   useEffect(() => {
     if (coach) registerOpen(coach.id);
   }, [coach, registerOpen]);
+
+  // Al salir del coach, subir su progreso a la nube (M6, no-op sin sesión).
+  useEffect(() => () => schedulePush(), []);
 
   // Puente opcional: si el coach pide volver (NAVIGATE_BACK) o avisa que cargó.
   useEffect(() => {

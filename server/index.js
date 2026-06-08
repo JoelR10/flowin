@@ -17,6 +17,14 @@ const __dir = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 8787;
 const TIMEOUT_MS = 30_000;
 
+// Monitoreo (Sentry) opcional, env-gated.
+let Sentry = null;
+if (process.env.SENTRY_DSN) {
+  Sentry = await import("@sentry/node");
+  Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.1 });
+  console.log("Sentry activo en el server");
+}
+
 const ENV_KEY = {
   gemini: "GEMINI_API_KEY",
   anthropic: "ANTHROPIC_API_KEY",
@@ -174,6 +182,7 @@ app.post("/api/ai", async (req, res) => {
     const text = await caller({ model, system: system || "", user, key });
     res.json({ text });
   } catch (e) {
+    if (Sentry && (!e?.status || e.status >= 500)) Sentry.captureException(e);
     res.status(e?.status || 502).json({ error: sanitize(e?.message || e) });
   }
 });
