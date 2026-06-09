@@ -167,6 +167,17 @@ export async function refreshServerStatus(cfg = getAIConfig()): Promise<void> {
     }
   } catch {
     /* server no disponible → seguimos con keys del cliente */
+    return;
+  }
+  // Auto-elegir un proveedor que el server tenga, si el actual no tiene key
+  // (ni del usuario ni del server). Así, si el server trae solo Claude, la app
+  // usa Claude sola, sin que el usuario toque el selector.
+  const cur = cfg.provider;
+  const curHasKey = (cfg.keys[cur] ?? "").trim().length > 0 || serverKeys[cur];
+  if (!curHasKey) {
+    const order: Provider[] = ["gemini", "anthropic", "openai"];
+    const pick = order.find((p) => serverKeys[p]);
+    if (pick && pick !== cur) setAIConfig({ ...cfg, provider: pick });
   }
 }
 
