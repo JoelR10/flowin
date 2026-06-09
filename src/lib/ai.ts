@@ -234,8 +234,14 @@ async function errorText(res: Response): Promise<string> {
 function mapStatus(provider: Provider, status: number, detail: string): Error {
   if (status === 401 || status === 403)
     return new Error("API key inválida o sin permisos. Revisala en Ajustes.");
-  if (status === 429)
-    return new Error("Llegaste al límite del proveedor por ahora. Probá en un rato.");
+  if (status === 429) {
+    // OpenAI/otros: 429 con "quota/billing" = la cuenta no tiene crédito (no es rate-limit temporal).
+    if (/quota|billing|insufficient|credit|plan/i.test(detail))
+      return new Error(
+        "Esa cuenta no tiene crédito/billing en el proveedor. Agregá un método de pago, o usá otra key (Gemini tiene tier gratis)."
+      );
+    return new Error("Llegaste al límite de uso del proveedor. Probá en un rato.");
+  }
   if (status === 404)
     return new Error("El modelo elegido no está disponible con tu key. Elegí otro en Ajustes.");
   return new Error(`${provider} ${status}: ${detail || "error desconocido"}`);
