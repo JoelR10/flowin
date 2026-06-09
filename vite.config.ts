@@ -4,6 +4,8 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // CSP solo en el build de producción (en dev rompería el HMR de Vite, que usa
 // inline + eval). Cubre el shell; los coaches son documentos aparte (su iframe).
+// connect-src incluye Supabase (auth + sync + realtime). Si usás Supabase
+// self-hosted en otro dominio, agregalo acá.
 const CSP = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -12,7 +14,7 @@ const CSP = [
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
   "script-src 'self'",
-  "connect-src 'self'",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
   "frame-src 'self'",
   "form-action 'self'"
 ].join("; ");
