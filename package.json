@@ -3,6 +3,8 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "author": "JITO",
+  "main": "electron/main.cjs",
   "description": "Flowin — suite de coaches personales (web PWA + móvil vía Capacitor)",
   "scripts": {
     "dev": "vite",
@@ -10,9 +12,19 @@
     "preview": "vite preview --host",
     "server": "node --env-file-if-exists=server/.env server/index.js",
     "serve": "npm run build && npm run server",
+    "electron:dev": "electron .",
+    "electron:pack": "electron-builder --win portable",
     "cap:sync": "cap sync",
     "cap:android": "cap open android",
     "cap:ios": "cap open ios"
+  },
+  "build": {
+    "appId": "com.flowin.app",
+    "productName": "Flowin",
+    "directories": { "output": "dist-electron" },
+    "files": ["electron/**", "dist/**"],
+    "win": { "target": "portable", "icon": "public/icons/icon-512.png" },
+    "portable": { "artifactName": "Flowin-${version}-portable.exe" }
   },
   "dependencies": {
     "@capacitor/android": "^8.4.0",
@@ -32,6 +44,8 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.20",
+    "electron": "^42.4.0",
+    "electron-builder": "^26.15.2",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.13",
     "typescript": "^5.6.2",
