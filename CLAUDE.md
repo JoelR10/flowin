@@ -51,28 +51,19 @@ Cero cambios en el shell.
   (bloque CSS `html[data-theme="dark"]` + script que aplica `data-theme`). Los 10 coaches del
   Suite son oscuros nativos.
 
-## IA (multi-proveedor, opcional, off por defecto)
-- Proveedores: **Gemini** (gratis, default), **Claude** (Anthropic), **ChatGPT** (OpenAI). El usuario
-  elige proveedor + pega su **propia key**; todo en localStorage (`flowin_ai_config`: enabled, provider,
-  keys{}, models{}). Sin backend, sin keys en el repo. Off por defecto.
-- **CORS (verificado real):** Gemini ✅ y Claude ✅ se llaman directo desde el navegador
-  (Anthropic requiere header `anthropic-dangerous-direct-browser-access: true`). **OpenAI ❌** bloquea
-  el navegador (Failed to fetch) → ChatGPT necesita backend/proxy; la UI lo avisa y el código tira mensaje claro.
-- Endpoints: Gemini `generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key=`;
-  Anthropic `api.anthropic.com/v1/messages` (x-api-key + anthropic-version 2023-06-01 + browser-access header);
-  OpenAI `api.openai.com/v1/chat/completions` (Bearer). Todo en `src/lib/ai.ts`.
-- `analyzeCoach(id)` analiza un coach; `analyzeAll()` conecta todas las áreas ("Mi vida"). Lee el localStorage
-  de cada coach (`coachData.ts`), NO recalcula puntajes.
-- UI: botón ✨ en CoachView, tab "Mi vida" (`/analisis`), config en Ajustes (toggle + proveedor + key + modelo + probar conexión).
-- **Guía in-app por proveedor** (Ajustes): cada proveedor (`PROVIDERS` en `ai.ts`) trae `tagline` + `steps[]`
-  (pasos PC y móvil) + badge `free`. Gemini marcado "gratis/recomendado". La guía se renderiza colapsable
-  con el link directo a sacar la key. Editar pasos = editar `PROVIDERS`.
-- Modelos elegibles por proveedor (Gemini default `gemini-2.0-flash`, Claude `claude-sonnet-4-6`, OpenAI `gpt-4o-mini`). Si un model id falla (404), elegir otro.
-- **Modo cero-config (server-keyed):** si el dueño pone una key en `server/.env`, el cliente la detecta vía
-  `GET /api/ai/status` (`refreshServerStatus`/`serverHasKey` en `ai.ts`) y muestra "IA lista vía el servidor —
-  no necesitás pegar ninguna clave". `call()` rutea por el proxy con key vacía (la pone el server). Ajustes
-  muestra banner verde y vuelve la key opcional. Es la forma más fácil. **No existe OAuth "sign in with
-  Claude/Gemini/OpenAI" para usar la suscripción del usuario** — API ≠ suscripción consumidor; siempre es key.
+## Consejos locales (reemplazó la IA — sin IA, sin keys, sin internet)
+- La IA se **quitó del front** (no había forma de testearla sin créditos). En su lugar: consejos rule-based
+  según el estado real de cada coach. `src/lib/advice.ts`.
+- **Cómo:** los 9 coaches del Suite calculan su `exportRow` (COACH_ID/PUNTAJE/ESTADO/ALERTA/RECOMENDACION)
+  y lo emiten al shell por `window.parent.postMessage({__flowin:'state', payload})` (inyectado tras cada
+  `const c=compute();` en el motor compartido). `coachBridge.ts` (`onState`) lo recibe; CoachView lo guarda
+  en `localStorage['flowin_state_<id>']` con `saveCoachState`.
+- `advice.ts`: `adviceFor(coach)` usa la RECOMENDACION viva (o el `tip` por defecto del manifiesto si no hay
+  estado); `lifeSummary()` arma "Foco de la semana" (peor puntaje) + "Tus áreas" + headline.
+- **"Mi vida"** (`/analisis`, `Analisis.tsx`): Foco + áreas con estado/semáforo/consejo + "sin datos" con tips.
+- Cada coach trae `tip` en el manifiesto (consejo por defecto). gym/agenda/finanzas no emiten estado → solo tip.
+- Borrados: `ai.ts`, `AnalysisModal.tsx`, `coachData.ts`, `markdown.ts`. Ajustes ya no tiene sección IA.
+- El server (`/api/ai`) quedó **dormido** (sin uso desde el front); sigue sirviendo `dist` para el deploy.
 
 ## Server (proxy IA + deploy todo-en-uno)
 - `server/index.js` (Express). `npm run server` → `http://localhost:8787`.
