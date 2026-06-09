@@ -112,7 +112,7 @@ Cero cambios en el shell.
 ## Estado actual
 M0–M3 hechos: catálogo + búsqueda/filtro, abrir coach en iframe, volver con scroll, favoritos,
 recientes/continuar, tema claro/oscuro, onboarding, persistencia local, PWA instalable + offline.
-12 coaches reales cargados (10 del Suite + AgendaJITO + Planificador). IA opcional (Gemini) integrada.
+12 coaches reales cargados (10 del Suite + Agenda + Planificador). IA opcional (Gemini) integrada.
 Arreglos aplicados: quitado el link roto "Volver al hub" (404) en los 10 coaches del Suite;
 hábitos ya no da 6 pts gratis en día vacío; corregido texto del motor de Salud.
 

@@ -141,7 +141,7 @@ td.calc{font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt);white
 }
 </style></head><body><div id="app"></div>
 <script>window.SPEC={"num": "10", "id": "COACH_SALUD_RECUPERACION", "area": "Salud / Recuperación", "title": "Salud y Recuperación", "icon": "🫀", "accent": "#5fd0c4", "subtitle": "Readiness no médico: sueño, calidad, dolor, fatiga, energía, estrés, movilidad e hidratación. Ayuda a decidir si subir o bajar carga.", "thresholds": {"green": 75, "yellow": 55}, "estados": {"green": "🟢 Listo", "yellow": "🟡 Cuidado", "red": "🔴 Recuperar"}, "entryNoun": "día", "config": [{"key": "metaSueno", "label": "Meta sueño (h)", "type": "number", "value": 7, "hint": "7–9"}, {"key": "metaMov", "label": "Meta movilidad (min)", "type": "number", "value": 10, "hint": "5–20"}, {"key": "metaAgua", "label": "Meta agua (L)", "type": "number", "value": 2.5, "hint": "2–4"}, {"key": "umbral", "label": "Umbral readiness bueno", "type": "number", "value": 75, "hint": "70–85"}, {"key": "dolorAlerta", "label": "Umbral dolor alerta (1-5)", "type": "number", "value": 4, "hint": "4–5"}], "columns": [{"key": "Fecha", "label": "Fecha", "type": "date", "role": "input"}, {"key": "Sueño_h", "label": "Sueño h", "type": "number", "role": "input"}, {"key": "Calidad_Sueño_1a5", "label": "Calidad 1-5", "type": "number", "role": "input"}, {"key": "Dolor_1a5", "label": "Dolor 1-5", "type": "number", "role": "input"}, {"key": "Fatiga_1a5", "label": "Fatiga 1-5", "type": "number", "role": "input"}, {"key": "Energía_1a5", "label": "Energía 1-5", "type": "number", "role": "input"}, {"key": "Estrés_1a5", "label": "Estrés 1-5", "type": "number", "role": "input"}, {"key": "Movilidad_min", "label": "Movilidad min", "type": "number", "role": "input"}, {"key": "Descanso_Activo", "label": "Desc. activo", "type": "select", "role": "input", "options": ["Sí", "No"]}, {"key": "Agua_L", "label": "Agua L", "type": "number", "role": "input"}, {"key": "Nota", "label": "Nota", "type": "text", "role": "input"}, {"key": "Readiness", "label": "Readiness", "type": "calc", "role": "calc"}, {"key": "Semáforo", "label": "Semáforo", "type": "calc", "role": "calc"}], "motor": [["Readiness", "Sueño", "min(sueño/meta,1) × 22", "22", "Base de recuperación"], ["Readiness", "Calidad", "(calidad/5) × 18", "18", "Calidad percibida"], ["Readiness", "Dolor", "(5−dolor)/4 × 15", "15", "Riesgo físico"], ["Readiness", "Fatiga", "(5−fatiga)/4 × 12", "12", "Carga acumulada"], ["Readiness", "Energía/Estrés", "(energía/5)×12 + ((5−estrés)/4)×9", "21", "Estado interno"], ["Readiness", "Movilidad/Agua", "proporcional a metas", "12", "Base preventiva"]], "guide": ["Registrá cada mañana sueño, calidad, dolor, fatiga, energía y estrés.", "Si el readiness está bajo, bajá la intensidad ese día.", "Vigilá dolor o fatiga altos sostenidos.", "Sumá movilidad y agua como base preventiva.", "Es una herramienta de autoconocimiento, no reemplaza criterio médico."], "claude": "COACH_SALUD_RECUPERACION · Salud/Recuperación (no médico). Entradas: sueño, calidad, dolor, fatiga, energía, estrés, movilidad, agua. Calcula un readiness (0–100) y semáforo para decidir carga. Si el readiness es bajo o el dolor/fatiga es alto, recomienda bajar intensidad y priorizar descanso; si el dolor persiste o aumenta, sugiere consultar a un profesional. No da diagnósticos."};
-SPEC.seed=[{"Fecha": "2026-06-04", "Sueño_h": 7, "Calidad_Sueño_1a5": 4, "Dolor_1a5": 2, "Fatiga_1a5": 2, "Energía_1a5": 4, "Estrés_1a5": 2, "Movilidad_min": 10, "Descanso_Activo": "Sí", "Agua_L": 2.5, "Nota": null, "Readiness": 150, "Semáforo": "🟢 Listo"}, {"Fecha": "2026-06-05", "Sueño_h": 6, "Calidad_Sueño_1a5": 3, "Dolor_1a5": 3, "Fatiga_1a5": 3, "Energía_1a5": 3, "Estrés_1a5": 3, "Movilidad_min": 5, "Descanso_Activo": "Sí", "Agua_L": 2.2, "Nota": null, "Readiness": 109, "Semáforo": "🟢 Listo"}, {"Fecha": "2026-06-06", "Sueño_h": 7.5, "Calidad_Sueño_1a5": 4, "Dolor_1a5": 2, "Fatiga_1a5": 2, "Energía_1a5": 4, "Estrés_1a5": 2, "Movilidad_min": 12, "Descanso_Activo": "Sí", "Agua_L": 2.8, "Nota": null, "Readiness": 150, "Semáforo": "🟢 Listo"}];
+SPEC.seed=[];
 SPEC.scoreEntry=function(e,c){
  var s=H.N(e['Sueño_h']),cal=H.N(e['Calidad_Sueño_1a5']),dol=H.N(e['Dolor_1a5']),fat=H.N(e['Fatiga_1a5']),
      en=H.N(e['Energía_1a5']),es=H.N(e['Estrés_1a5']),mov=H.N(e['Movilidad_min']),ag=H.N(e['Agua_L']);
@@ -176,7 +176,7 @@ SPEC.blank=function(){var t=new Date().toISOString().slice(0,10);return {'Fecha'
 </script><script>
 (function(){
   const S = window.SPEC;
-  const KEY = 'coachsuite_v1_'+S.num;
+  const KEY = 'flowin_coach_v1_'+S.num;
   const $ = (s,e=document)=>e.querySelector(s);
   const H = {
     N:v=>{v=parseFloat(v);return isNaN(v)?0:v;},
@@ -251,7 +251,7 @@ SPEC.blank=function(){var t=new Date().toISOString().slice(0,10);return {'Fecha'
           <nav class="nav">${NAV.map(n=>`<button data-v="${n[0]}" class="${view===n[0]?'on':''}"><span class="ic">${n[1]}</span>${n[2]}</button>`).join('')}</nav>
           <section class="view" id="viewbox"></section>
         </div>
-        <div class="foot">Coach Suite de JITO · los datos se guardan en este navegador</div>
+        <div class="foot">Coach Suite · los datos se guardan en este navegador</div>
       </div>
       <div class="toast" id="toast"></div>`;
     app.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{view=b.dataset.v;render();});

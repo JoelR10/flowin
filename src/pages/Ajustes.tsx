@@ -276,8 +276,9 @@ export default function Ajustes() {
       </div>
 
       <p className="shell-muted mt-6 text-xs leading-relaxed">
-        Tus datos (preferencias, favoritos y el progreso de cada coach) viven en este
-        dispositivo. No hay cuenta ni servidor.
+        {supabaseEnabled
+          ? "Tus datos se sincronizan con tu cuenta y cada usuario ve solo lo suyo. También quedan en este dispositivo para uso offline. Tus claves de IA no se suben: quedan solo acá."
+          : "Tus datos (preferencias, favoritos y el progreso de cada coach) viven en este dispositivo. No hay cuenta ni servidor."}
       </p>
     </div>
   );

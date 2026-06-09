@@ -6,7 +6,7 @@ import type { Coach } from "../types";
 export const COACHES: Coach[] = [
   {
     id: "habitos",
-    storageKey: "coachsuite_v1_04",
+    storageKey: "flowin_coach_v1_04",
     slug: "habitos",
     name: "Hábitos y Disciplina",
     shortDescription:
@@ -23,7 +23,7 @@ export const COACHES: Coach[] = [
   },
   {
     id: "metas",
-    storageKey: "coachsuite_v1_05",
+    storageKey: "flowin_coach_v1_05",
     slug: "metas",
     name: "Metas y OKR Personal",
     shortDescription:
@@ -39,7 +39,7 @@ export const COACHES: Coach[] = [
   },
   {
     id: "negocios",
-    storageKey: "coachsuite_v1_06",
+    storageKey: "flowin_coach_v1_06",
     slug: "negocios",
     name: "Negocios y Ventas",
     shortDescription:
@@ -56,7 +56,7 @@ export const COACHES: Coach[] = [
   },
   {
     id: "proyectos",
-    storageKey: "coachsuite_v1_07",
+    storageKey: "flowin_coach_v1_07",
     slug: "proyectos",
     name: "Proyectos y Apps",
     shortDescription: "Salud de proyectos: progreso, riesgo, bloqueos y deadlines.",
@@ -71,7 +71,7 @@ export const COACHES: Coach[] = [
   },
   {
     id: "contenido",
-    storageKey: "coachsuite_v1_08",
+    storageKey: "flowin_coach_v1_08",
     slug: "contenido",
     name: "Contenido y Marca Personal",
     shortDescription:
@@ -87,7 +87,7 @@ export const COACHES: Coach[] = [
   },
   {
     id: "aprendizaje",
-    storageKey: "coachsuite_v1_09",
+    storageKey: "flowin_coach_v1_09",
     slug: "aprendizaje",
     name: "Aprendizaje y Habilidades",
     shortDescription:
@@ -103,7 +103,7 @@ export const COACHES: Coach[] = [
   },
   {
     id: "salud",
-    storageKey: "coachsuite_v1_10",
+    storageKey: "flowin_coach_v1_10",
     slug: "salud",
     name: "Salud y Recuperación",
     shortDescription:
@@ -120,7 +120,7 @@ export const COACHES: Coach[] = [
   },
   {
     id: "decisiones",
-    storageKey: "coachsuite_v1_11",
+    storageKey: "flowin_coach_v1_11",
     slug: "decisiones",
     name: "Decisiones y Compras",
     shortDescription:
@@ -137,7 +137,7 @@ export const COACHES: Coach[] = [
   },
   {
     id: "relaciones",
-    storageKey: "coachsuite_v1_12",
+    storageKey: "flowin_coach_v1_12",
     slug: "relaciones",
     name: "Relaciones y Networking",
     shortDescription:
@@ -153,7 +153,7 @@ export const COACHES: Coach[] = [
   },
   {
     id: "gym",
-    storageKey: "gym_jito_v1",
+    storageKey: "gym_v1",
     slug: "gym",
     name: "Gym Coach App",
     shortDescription:
@@ -170,9 +170,9 @@ export const COACHES: Coach[] = [
   },
   {
     id: "agenda",
-    storageKey: "agenda-jito",
+    storageKey: "agenda",
     slug: "agenda",
-    name: "Agenda JITO",
+    name: "Agenda",
     shortDescription:
       "Cronograma personal con recordatorios y bloques de tiempo del día.",
     longDescription:

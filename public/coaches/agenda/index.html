@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Agenda JITO — Cronograma Personal</title>
+<title>Agenda — Cronograma Personal</title>
 <script src="../_vendor/tailwind.cdn.js"></script>
 <script crossorigin src="../_vendor/react.production.min.js"></script>
 <script crossorigin src="../_vendor/react-dom.production.min.js"></script>
@@ -65,8 +65,8 @@ const IconSpark     = (p) => <Icon {...p} d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M
 const CATEGORIAS = [
   { nombre: "Trabajo",          color: "bg-blue-500",    text: "text-blue-700",    ring: "ring-blue-200",    bg: "bg-blue-50"    },
   { nombre: "Universidad",      color: "bg-purple-500",  text: "text-purple-700",  ring: "ring-purple-200",  bg: "bg-purple-50"  },
-  { nombre: "Glass Solution",   color: "bg-cyan-500",    text: "text-cyan-700",    ring: "ring-cyan-200",    bg: "bg-cyan-50"    },
-  { nombre: "JITO / Streaming", color: "bg-pink-500",    text: "text-pink-700",    ring: "ring-pink-200",    bg: "bg-pink-50"    },
+  { nombre: "Clientes",  color: "bg-cyan-500",    text: "text-cyan-700",    ring: "ring-cyan-200",    bg: "bg-cyan-50"    },
+  { nombre: "Contenido", color: "bg-pink-500",    text: "text-pink-700",    ring: "ring-pink-200",    bg: "bg-pink-50"    },
   { nombre: "Finanzas",         color: "bg-emerald-500", text: "text-emerald-700", ring: "ring-emerald-200", bg: "bg-emerald-50" },
   { nombre: "Personal",         color: "bg-amber-500",   text: "text-amber-700",   ring: "ring-amber-200",   bg: "bg-amber-50"   },
   { nombre: "Trámites",         color: "bg-indigo-500",  text: "text-indigo-700",  ring: "ring-indigo-200",  bg: "bg-indigo-50"  },
@@ -85,14 +85,7 @@ const RECORDATORIOS = [
 const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-const SEED = [
-  { id: "ACT-0001", fecha: "2026-06-03", hora: "09:00", actividad: "Revisar campaña de Glass Solution", descripcion: "Validar textos, presupuesto y piezas visuales de la campaña de junio.", categoria: "Glass Solution",   prioridad: "Alta",  estado: "Pendiente",  recordatorio: "30 min antes", notas: "Revisar si falta arte 1:1 para Meta." },
-  { id: "ACT-0002", fecha: "2026-06-03", hora: "15:00", actividad: "Pagar servicios",                   descripcion: "Revisar pagos de internet, agua, alquiler y otros servicios.",     categoria: "Finanzas",         prioridad: "Alta",  estado: "Pendiente",  recordatorio: "1 hora antes", notas: "Confirmar comprobantes." },
-  { id: "ACT-0003", fecha: "2026-06-04", hora: "19:00", actividad: "Estudiar programación",             descripcion: "Repasar estructura ordenada de proyecto, capas, validaciones y documentación.", categoria: "Universidad", prioridad: "Media", estado: "En proceso", recordatorio: "1 día antes",  notas: "Bloque de estudio de 90 minutos." },
-  { id: "ACT-0004", fecha: "2026-06-05", hora: "20:00", actividad: "Preparar contenido para JITO",      descripcion: "Definir ideas de clips, títulos y piezas para TikTok / Twitch.",  categoria: "JITO / Streaming", prioridad: "Media", estado: "Pendiente",  recordatorio: "30 min antes", notas: "Revisar clips anteriores." },
-  { id: "ACT-0005", fecha: "2026-06-06", hora: "10:00", actividad: "Revisar cotizaciones pendientes",   descripcion: "Ordenar cotizaciones, metrajes y prioridades de seguimiento.",     categoria: "Glass Solution",   prioridad: "Alta",  estado: "Pendiente",  recordatorio: "1 hora antes", notas: "Marcar las más urgentes." },
-  { id: "ACT-0006", fecha: "2026-06-07", hora: "11:30", actividad: "Actualizar respaldo de agenda",     descripcion: "Exportar respaldo manual desde Respaldo_JSON.",                    categoria: "Personal",         prioridad: "Baja",  estado: "Pendiente",  recordatorio: "1 día antes",  notas: "Copiar JSON en archivo aparte." },
-];
+const SEED = [];
 
 /* ============================
    Utilidades
@@ -151,25 +144,25 @@ function App() {
   // Cargar
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("agenda-jito");
+      const raw = localStorage.getItem("agenda");
       if (raw) { const data = JSON.parse(raw); if (Array.isArray(data) && data.length) setActividades(data); }
       // Tema: lo manda el shell de Flowin (?flowinTheme); si no, usa el guardado.
       const extTheme = new URLSearchParams(location.search).get("flowinTheme");
       if (extTheme === "dark") setDark(true);
       else if (extTheme === "light") setDark(false);
-      else if (localStorage.getItem("agenda-jito-dark") === "true") setDark(true);
-      const ni = localStorage.getItem("agenda-jito-nag-int"); if (ni) setNagIntervalo(parseInt(ni, 10) || 15);
-      if (localStorage.getItem("agenda-jito-nag-act") === "false") setNagActivo(false);
-      const un = localStorage.getItem("agenda-jito-ultimo-nag"); if (un) setUltimoNag(JSON.parse(un));
+      else if (localStorage.getItem("agenda-dark") === "true") setDark(true);
+      const ni = localStorage.getItem("agenda-nag-int"); if (ni) setNagIntervalo(parseInt(ni, 10) || 15);
+      if (localStorage.getItem("agenda-nag-act") === "false") setNagActivo(false);
+      const un = localStorage.getItem("agenda-ultimo-nag"); if (un) setUltimoNag(JSON.parse(un));
     } catch (_) {}
   }, []);
 
   // Guardar
-  useEffect(() => { try { localStorage.setItem("agenda-jito", JSON.stringify(actividades)); } catch (_) {} }, [actividades]);
-  useEffect(() => { try { localStorage.setItem("agenda-jito-dark", String(dark)); } catch (_) {} }, [dark]);
-  useEffect(() => { try { localStorage.setItem("agenda-jito-nag-int", String(nagIntervalo)); } catch (_) {} }, [nagIntervalo]);
-  useEffect(() => { try { localStorage.setItem("agenda-jito-nag-act", String(nagActivo)); } catch (_) {} }, [nagActivo]);
-  useEffect(() => { try { localStorage.setItem("agenda-jito-ultimo-nag", JSON.stringify(ultimoNag)); } catch (_) {} }, [ultimoNag]);
+  useEffect(() => { try { localStorage.setItem("agenda", JSON.stringify(actividades)); } catch (_) {} }, [actividades]);
+  useEffect(() => { try { localStorage.setItem("agenda-dark", String(dark)); } catch (_) {} }, [dark]);
+  useEffect(() => { try { localStorage.setItem("agenda-nag-int", String(nagIntervalo)); } catch (_) {} }, [nagIntervalo]);
+  useEffect(() => { try { localStorage.setItem("agenda-nag-act", String(nagActivo)); } catch (_) {} }, [nagActivo]);
+  useEffect(() => { try { localStorage.setItem("agenda-ultimo-nag", JSON.stringify(ultimoNag)); } catch (_) {} }, [ultimoNag]);
 
   // Reloj
   useEffect(() => {
@@ -197,7 +190,7 @@ function App() {
         setAlertasMostradas((prev) => new Set(prev).add(a.id));
         setToast({ tipo: "alerta", titulo: "⏰ Recordatorio", mensaje: `${a.actividad} — ${a.hora}` });
         if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-          try { new Notification("Recordatorio Agenda JITO", { body: `${a.actividad} a las ${a.hora}` }); } catch (_) {}
+          try { new Notification("Recordatorio Agenda", { body: `${a.actividad} a las ${a.hora}` }); } catch (_) {}
         }
       }
     });
@@ -303,7 +296,7 @@ function App() {
     const blob = new Blob([JSON.stringify(actividades, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `agenda-jito-${toYMD(new Date())}.json`; a.click();
+    a.href = url; a.download = `agenda-${toYMD(new Date())}.json`; a.click();
     URL.revokeObjectURL(url);
     setToast({ tipo: "ok", titulo: "Exportado", mensaje: "Respaldo JSON descargado" });
   };
@@ -352,7 +345,7 @@ function App() {
               <IconSpark w={18} h={18} />
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight">Agenda JITO</h1>
+              <h1 className="text-lg font-bold leading-tight">Agenda</h1>
               <p className={`text-xs ${T.textMuted}`}>{now.toLocaleDateString("es-CR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · {now.toLocaleTimeString("es-CR", { hour: "2-digit", minute: "2-digit" })}</p>
             </div>
           </div>

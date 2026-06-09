@@ -8,7 +8,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 //   npx cap add ios       (requiere macOS + Xcode)
 //   npm run cap:sync
 const config: CapacitorConfig = {
-  appId: "com.jito.flowin",
+  appId: "com.flowin.app",
   appName: "Flowin",
   webDir: "dist",
   backgroundColor: "#0a0d13",

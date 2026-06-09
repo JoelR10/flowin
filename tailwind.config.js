@@ -5,7 +5,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Paleta tomada del Suite original de JITO.
+        // Paleta tomada del sistema visual de Flowin.
         bg: "#0a0d13",
         card: "#141a23",
         line: "#252e3a",

@@ -1,7 +1,7 @@
 # Flowin — Documento de Requerimientos
 
 > App de **coaches personales** en una sola base de código, distribuida como **web (PWA)** y **móvil (Android / iOS)**.
-> Versión del documento: 0.1 (borrador) · Fecha: 2026-06-05 · Autor: jito
+> Versión del documento: 0.1 (borrador) · Fecha: 2026-06-05 · Autor: Flowin
 > Estado: catálogo de coaches en **PLACEHOLDER** — se reconcilia con el `.zip` de coaches HTML hechos en COWORK.
 
 ---
@@ -38,7 +38,7 @@ Objetivo central: **una sola base de código** que corra en navegador y se empaq
 ## 3. Usuarios
 
 - **Usuario final:** persona que quiere apoyo personal en alguna área (ver catálogo en §6). Usa la app principalmente desde el móvil, a veces desde el navegador. Quiere abrir un coach rápido y que recuerde dónde quedó.
-- **Creador de coaches (jito):** agrega coaches nuevos dejando caer una carpeta HTML y registrándola en el manifiesto. No debería tener que tocar el código del shell para sumar un coach.
+- **Creador de coaches:** agrega coaches nuevos dejando caer una carpeta HTML y registrándola en el manifiesto. No debería tener que tocar el código del shell para sumar un coach.
 
 ---
 

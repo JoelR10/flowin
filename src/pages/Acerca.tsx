@@ -31,8 +31,8 @@ export default function Acerca() {
       <div className="shell-card mt-3 rounded-2xl p-4 text-sm">
         <p className="font-semibold">Créditos</p>
         <p className="shell-muted mt-1">
-          Coaches y diseño original por JITO. Shell construido con React, Vite,
-          Tailwind y Capacitor.
+          Coaches y diseño original de Flowin. Shell construido con React,
+          Vite, Tailwind y Capacitor.
         </p>
       </div>
 

@@ -141,7 +141,7 @@ td.calc{font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt);white
 }
 </style></head><body><div id="app"></div>
 <script>window.SPEC={"num": "09", "id": "COACH_APRENDIZAJE", "area": "Aprendizaje", "title": "Aprendizaje y Habilidades", "icon": "📚", "accent": "#c08bff", "subtitle": "Estudio con evidencia: cumplimiento de tiempo y comprensión real. El puntaje combina ejecución y calidad por sesión.", "thresholds": {"green": 75, "yellow": 50}, "estados": {"green": "🟢 Sólido", "yellow": "🟡 Repasar", "red": "🔴 Comprensión baja"}, "entryNoun": "sesión", "config": [{"key": "metaMin", "label": "Meta minutos/día", "type": "number", "value": 60, "hint": "30–180"}, {"key": "metaHorasSem", "label": "Meta horas/semana", "type": "number", "value": 7, "hint": "3–20"}, {"key": "compMin", "label": "Comprensión mínima (1-5)", "type": "number", "value": 4, "hint": "3–5"}, {"key": "metaSesiones", "label": "Meta sesiones/semana", "type": "number", "value": 5, "hint": "3–7"}], "columns": [{"key": "Fecha", "label": "Fecha", "type": "date", "role": "input"}, {"key": "Área", "label": "Área", "type": "text", "role": "input"}, {"key": "Tema", "label": "Tema", "type": "text", "role": "input"}, {"key": "Tipo_Estudio", "label": "Tipo", "type": "select", "role": "input", "options": ["Curso", "Práctica", "Proyecto", "Lectura", "Video"]}, {"key": "Min_Plan", "label": "Min plan", "type": "number", "role": "input"}, {"key": "Min_Hechos", "label": "Min hechos", "type": "number", "role": "input"}, {"key": "Comprensión_1a5", "label": "Compr. 1-5", "type": "number", "role": "input"}, {"key": "Evidencia", "label": "Evidencia", "type": "text", "role": "input"}, {"key": "Estado", "label": "Estado", "type": "select", "role": "input", "options": ["Completado", "Repasar", "Pendiente"]}, {"key": "Próximo_Paso", "label": "Próximo paso", "type": "text", "role": "input"}, {"key": "Puntos", "label": "Puntos", "type": "calc", "role": "calc"}, {"key": "Semáforo", "label": "Semáforo", "type": "calc", "role": "calc"}], "motor": [["Puntos", "Cumplimiento", "min(min hechos/min plan,1) × 50", "50", "Mide ejecución"], ["Puntos", "Comprensión", "(comprensión/5) × 50", "50", "Mide calidad"], ["Evidencia", "Output", "Texto / archivo / resultado", "★", "Evita aprendizaje pasivo"], ["Alerta", "Comprensión baja", "Promedio < mínimo", "🔴", "Necesita repaso"]], "guide": ["Definí tu meta de minutos y comprensión.", "Registrá cada sesión con minutos hechos y comprensión 1–5.", "Generá una evidencia (output) por sesión.", "Repasá los temas con comprensión baja.", "Mirá horas acumuladas y comprensión en el Resumen."], "claude": "COACH_APRENDIZAJE · Aprendizaje. Entradas: sesiones de estudio con minutos plan/hechos, comprensión 1–5 y evidencia. Calcula puntos (0–100) por sesión combinando ejecución y calidad. Si la comprensión promedio es baja, recomienda repaso con práctica activa. Exige una evidencia por sesión para evitar estudio pasivo."};
-SPEC.seed=[{"Fecha": "2026-06-04", "Área": "Programación", "Tema": "Arquitectura app Pymeflow", "Tipo_Estudio": "Proyecto", "Min_Plan": 60, "Min_Hechos": 70, "Comprensión_1a5": 4, "Evidencia": "Documento de requisitos", "Estado": "Completado", "Próximo_Paso": "Definir módulos", "Puntos": 90, "Semáforo": "🟢 Dominado"}, {"Fecha": "2026-06-05", "Área": "Inglés", "Tema": "Vocabulario técnico", "Tipo_Estudio": "Práctica", "Min_Plan": 45, "Min_Hechos": 30, "Comprensión_1a5": 3, "Evidencia": "Lista de frases", "Estado": "Repasar", "Próximo_Paso": "Repetir mañana", "Puntos": 63, "Semáforo": "🟡 Practicar"}, {"Fecha": "2026-06-06", "Área": "IA", "Tema": "Prompts para Claude Code", "Tipo_Estudio": "Curso", "Min_Plan": 60, "Min_Hechos": 60, "Comprensión_1a5": 4, "Evidencia": "Prompt probado", "Estado": "Completado", "Próximo_Paso": "Crear plantilla", "Puntos": 90, "Semáforo": "🟢 Dominado"}];
+SPEC.seed=[];
 SPEC.scoreEntry=function(e,c){
  var plan=H.N(e['Min_Plan']),hechos=H.N(e['Min_Hechos']),comp=H.N(e['Comprensión_1a5']);
  var pts=(plan>0?Math.min(hechos/plan,1):0)*50+(comp/5)*50, cmin=H.N(c.compMin)||4;
@@ -171,7 +171,7 @@ SPEC.blank=function(){var t=new Date().toISOString().slice(0,10);return {'Fecha'
 </script><script>
 (function(){
   const S = window.SPEC;
-  const KEY = 'coachsuite_v1_'+S.num;
+  const KEY = 'flowin_coach_v1_'+S.num;
   const $ = (s,e=document)=>e.querySelector(s);
   const H = {
     N:v=>{v=parseFloat(v);return isNaN(v)?0:v;},
@@ -246,7 +246,7 @@ SPEC.blank=function(){var t=new Date().toISOString().slice(0,10);return {'Fecha'
           <nav class="nav">${NAV.map(n=>`<button data-v="${n[0]}" class="${view===n[0]?'on':''}"><span class="ic">${n[1]}</span>${n[2]}</button>`).join('')}</nav>
           <section class="view" id="viewbox"></section>
         </div>
-        <div class="foot">Coach Suite de JITO · los datos se guardan en este navegador</div>
+        <div class="foot">Coach Suite · los datos se guardan en este navegador</div>
       </div>
       <div class="toast" id="toast"></div>`;
     app.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{view=b.dataset.v;render();});
