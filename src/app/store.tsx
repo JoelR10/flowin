@@ -84,8 +84,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // Update funcional: compone sobre el estado actual (sin re-leer storage) →
+  // dos toggles rápidos no se pisan. Persiste el resultado calculado.
   const toggleFavorite = useCallback((coachId: string) => {
-    void db.toggleFavorite(coachId).then(setFavorites);
+    setFavorites((prev) => {
+      const next = prev.includes(coachId)
+        ? prev.filter((id) => id !== coachId)
+        : [...prev, coachId];
+      void db.setFavorites(next);
+      return next;
+    });
   }, []);
 
   const isFavorite = useCallback(
@@ -94,7 +102,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
 
   const registerOpen = useCallback((coachId: string) => {
-    void db.pushRecent(coachId).then(setRecents);
+    setRecents((prev) => {
+      const next = [
+        { coachId, lastOpenedAt: Date.now() },
+        ...prev.filter((r) => r.coachId !== coachId)
+      ].slice(0, 12);
+      void db.setRecents(next);
+      return next;
+    });
   }, []);
 
   const finishOnboarding = useCallback(() => {

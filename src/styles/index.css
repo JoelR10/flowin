@@ -67,48 +67,6 @@ html {
   }
 }
 
-/* Render del markdown de los análisis de IA. */
-.ai-md h3 {
-  font-size: 1rem;
-  font-weight: 700;
-  margin: 1rem 0 0.35rem;
-}
-.ai-md h3:first-child {
-  margin-top: 0;
-}
-.ai-md h4 {
-  font-size: 0.9rem;
-  font-weight: 700;
-  margin: 0.8rem 0 0.3rem;
-}
-.ai-md p {
-  margin: 0.4rem 0;
-}
-.ai-md ul,
-.ai-md ol {
-  margin: 0.4rem 0;
-  padding-left: 1.2rem;
-}
-.ai-md li {
-  margin: 0.25rem 0;
-}
-.ai-md ul {
-  list-style: disc;
-}
-.ai-md ol {
-  list-style: decimal;
-}
-.ai-md strong {
-  color: var(--txt, #e8eef6);
-  font-weight: 700;
-}
-.ai-md code {
-  background: var(--card2, rgba(255, 255, 255, 0.08));
-  padding: 1px 5px;
-  border-radius: 5px;
-  font-size: 0.85em;
-}
-
 /* Oculta scrollbars horizontales de chips de categoría. */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

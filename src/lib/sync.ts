@@ -6,7 +6,7 @@ import type { RecentEntry, UserPrefs } from "../types";
 // Sync por usuario contra la tabla `user_state` (protegida con RLS:
 // auth.uid() = user_id → nadie ve datos ajenos). Guarda el estado del shell
 // (prefs/favoritos/recientes) + el progreso de cada coach (su blob de
-// localStorage). NO sincroniza las API keys de IA (quedan solo en el dispositivo).
+// localStorage). No sincroniza secretos ni credenciales privadas.
 
 type Row = { user_id: string; key: string; data: unknown; updated_at: string };
 

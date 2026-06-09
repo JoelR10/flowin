@@ -1,116 +1,95 @@
-# Flowin — guía para Claude Code
+# Flowin - guia para Claude Code
 
-App de **coaches personales** en una sola base de código: **web (PWA)** + **móvil (Capacitor Android/iOS)**.
-El shell (React) organiza y presenta coaches HTML autocontenidos que se abren en un `<iframe sandbox>`.
+App de coaches personales en una sola base de codigo: web PWA + movil via Capacitor.
+El shell React organiza 12 coaches autocontenidos que se abren en un iframe sandbox.
 Spec completa: `REQUERIMIENTOS_FLOWIN.md`.
 
 ## Stack
-- React 18 + Vite 5 + TypeScript
-- Tailwind CSS (tema oscuro/claro vía clase en `<html>`)
-- React Router (HashRouter — funciona como archivo estático en Capacitor)
-- Persistencia local: `localforage` (IndexedDB) — sin backend
-- PWA: `vite-plugin-pwa` (Workbox)
-- Móvil: Capacitor (`capacitor.config.ts`)
+- React 18 + Vite 5 + TypeScript.
+- Tailwind CSS con tema oscuro/claro en el shell.
+- React Router con HashRouter para que funcione como estatico y en Capacitor.
+- Persistencia local con `localforage` e IndexedDB; cada coach mantiene su propio `localStorage`.
+- PWA con `vite-plugin-pwa`.
+- Movil via Capacitor (`capacitor.config.ts`).
+- Supabase Auth/sync opcional, activado por env.
 
 ## Comandos
 ```bash
 npm install
-npm run dev        # desarrollo (Vite)
-npm run build      # tsc -b && vite build  → dist/
-npm run preview    # sirve el build (probar PWA/offline)
-node scripts/generate-icons.mjs   # regenera íconos PWA
+npm run dev
+npm run build
+npm run preview
+npm run server
+npm run serve
+node scripts/generate-icons.mjs
 ```
 
 ## Estructura
-```
+```text
 public/coaches/<id>/index.html   # cada coach, autocontenido
-public/coaches/_vendor/          # React/Tailwind/Babel locales (coach 'agenda', offline)
-public/icons/                    # íconos PWA generados
-src/data/coaches.ts              # MANIFIESTO — fuente de verdad del catálogo (incl. storageKey por coach)
-src/lib/storage.ts              # prefs / favoritos / recientes (localforage)
-src/lib/coachBridge.ts          # postMessage shell↔coach (opcional, hoy no-op)
-src/lib/coachData.ts            # lee el localStorage de cada coach (mismo origen) → snapshots
-src/lib/ai.ts                   # servicio IA: Gemini (key local del usuario), analyzeCoach/analyzeAll
-src/lib/markdown.ts             # render markdown→HTML seguro para los análisis
-src/app/store.tsx               # estado global (tema, favoritos, recientes)
-src/pages/                      # Catalogo, CoachView, Analisis, Favoritos, Ajustes, Acerca, Onboarding
-src/components/                 # CoachCard, BottomNav, ThemeToggle, AnalysisModal
+public/coaches/_vendor/          # React/Tailwind/Babel locales para coaches offline
+public/icons/                    # iconos PWA generados
+src/data/coaches.ts              # manifiesto y storageKey por coach
+src/lib/storage.ts               # prefs / favoritos / recientes
+src/lib/coachBridge.ts           # postMessage shell <-> coach
+src/lib/advice.ts                # consejos locales, sin IA ni internet
+src/lib/sync.ts                  # sync Supabase por usuario
+src/app/store.tsx                # estado global
+src/pages/                       # Catalogo, CoachView, Analisis, Favoritos, Ajustes, Acerca, Onboarding
+src/components/                  # CoachCard, BottomNav, ThemeToggle y componentes de auth
 ```
 
-## Regla de oro (RNF-08)
-**Sumar un coach = copiar su carpeta a `public/coaches/<id>/` + agregar una entrada en `src/data/coaches.ts`.**
-Cero cambios en el shell.
+## Regla de oro
+Sumar un coach = copiar su carpeta a `public/coaches/<id>/` + agregar una entrada en `src/data/coaches.ts`.
+El shell no debe necesitar cambios para cada nuevo coach.
 
-- Si el coach trae CDN externo (React/Tailwind por URL), **vendorizalo** a `public/coaches/_vendor/`
-  y reescribí sus `<script src>` a rutas relativas, para no romper el modo offline (RF-11).
-- Cada coach guarda su propio estado en `localStorage` (key propia). El shell solo guarda
-  prefs/favoritos/recientes. No mezclar.
-- **Tema:** el shell pasa su tema al iframe vía `?flowinTheme=dark|light` (ver `CoachView.tsx`).
-  Si un coach tiene tema propio (claro/oscuro), que lea ese parámetro al cargar para arrancar
-  acorde al shell. Ejemplos hechos: `agenda` (lee el param en su effect de carga) y `finanzas`
-  (bloque CSS `html[data-theme="dark"]` + script que aplica `data-theme`). Los 10 coaches del
-  Suite son oscuros nativos.
+- Si un coach trae CDN externo, vendorizarlo a `public/coaches/_vendor/` y reescribir scripts a rutas relativas.
+- Cada coach guarda su estado en su propia key de `localStorage`.
+- El shell pasa el tema al iframe con `?flowinTheme=dark|light`.
+- Los coaches son codigo propio y confiable; mantenerlos revisados porque usan sandbox con scripts y same-origin.
 
-## Consejos locales (reemplazó la IA — sin IA, sin keys, sin internet)
-- La IA se **quitó del front** (no había forma de testearla sin créditos). En su lugar: consejos rule-based
-  según el estado real de cada coach. `src/lib/advice.ts`.
-- **Cómo:** los 9 coaches del Suite calculan su `exportRow` (COACH_ID/PUNTAJE/ESTADO/ALERTA/RECOMENDACION)
-  y lo emiten al shell por `window.parent.postMessage({__flowin:'state', payload})` (inyectado tras cada
-  `const c=compute();` en el motor compartido). `coachBridge.ts` (`onState`) lo recibe; CoachView lo guarda
-  en `localStorage['flowin_state_<id>']` con `saveCoachState`.
-- `advice.ts`: `adviceFor(coach)` usa la RECOMENDACION viva (o el `tip` por defecto del manifiesto si no hay
-  estado); `lifeSummary()` arma "Foco de la semana" (peor puntaje) + "Tus áreas" + headline.
-- **"Mi vida"** (`/analisis`, `Analisis.tsx`): Foco + áreas con estado/semáforo/consejo + "sin datos" con tips.
-- Cada coach trae `tip` en el manifiesto (consejo por defecto). gym/agenda/finanzas no emiten estado → solo tip.
-- Borrados: `ai.ts`, `AnalysisModal.tsx`, `coachData.ts`, `markdown.ts`. Ajustes ya no tiene sección IA.
-- El server (`/api/ai`) quedó **dormido** (sin uso desde el front); sigue sirviendo `dist` para el deploy.
+## Consejos locales
+Flowin no tiene modulo IA. El apartado "Mi vida" usa consejos rule-based calculados en el dispositivo, sin keys, sin proveedores externos y sin internet.
 
-## Server (proxy IA + deploy todo-en-uno)
-- `server/index.js` (Express). `npm run server` → `http://localhost:8787`.
-- `POST /api/ai` `{provider, model, system, user, apiKey}` → llama al proveedor server-side y
-  devuelve `{text}`. Key: la del cliente, o fallback a `.env` del server (`server/.env`, ver `.env.example`).
-- **Desbloquea ChatGPT**: OpenAI bloquea el navegador (CORS); el server hace la llamada. Gemini/Claude
-  siguen yendo directo del navegador (no dependen del server).
-- En dev, Vite proxya `/api` → `:8787` (ver `vite.config.ts`). El cliente usa `proxyUrl` (default `/api/ai`).
-- Si existe `dist/`, el server lo sirve → `npm run serve` (build + server) = **deploy de un solo origen**
-  (app + coaches + API juntos, sin CORS). Verificado: sirve app, coaches y `/api/ai`.
-- **Endurecimiento** (env, ver `server/.env.example`): `ALLOWED_ORIGINS` (allowlist CORS; vacío=abierto+warning),
-  `APP_TOKEN` (exige header `x-flowin-token`; el cliente lo manda desde `proxyToken` en Ajustes), rate-limit
-  en memoria (30/min/IP), timeout 30s en upstream, errores sanitizados (oculta keys), status real del upstream.
-- **Privacidad (cliente):** AnalysisModal pide **consentimiento una vez** (`flowin_ai_consent`) nombrando el
-  proveedor antes de mandar datos; footer lo recuerda.
-- **CSP** (S3): inyectada solo en el build de prod (plugin en `vite.config.ts`, `apply:'build'`) — dev sin CSP
-  para no romper HMR. Cubre el shell; los coaches (iframe) son docs aparte. Si el proxy vive en otro origen,
-  agregarlo a `connect-src`.
+- `src/lib/advice.ts` genera foco semanal, areas y consejos por coach.
+- Los coaches del Suite emiten estado con `window.parent.postMessage({__flowin:'state', payload})`.
+- `src/lib/coachBridge.ts` recibe ese estado y `CoachView` lo guarda en `localStorage['flowin_state_<id>']`.
+- `Analisis.tsx` muestra foco, estado por areas y tips cuando aun no hay datos.
+- `Ajustes.tsx` ya no tiene configuracion IA.
 
-## Despliegue (coaches listos para cualquier target)
-- Coaches **100% self-contained**: 0 requests externos (CDN/fetch/fuentes), vendor por ruta relativa
-  (`../_vendor/`), sin rutas absolutas internas. Offline total. Portables a cualquier host.
-- Shell usa `import.meta.env.BASE_URL` para el iframe del coach → anda en **raíz** y en **subpath**.
-- Targets OK: estático en dominio raíz ✅, all-in-one node (`npm run serve`) ✅, PWA (https) ✅, Capacitor ✅.
-- **Subpath** (p.ej. `/flowin/`): además setear `base: '/flowin/'` en `vite.config.ts` y rebuild.
-- ChatGPT en producción necesita el server desplegado (Node host o serverless) y la `proxyUrl` apuntándole.
+## Server
+`server/index.js` es un servidor Express minimo para produccion:
 
-## Cuentas + nube + monitoreo (M6, env-gated)
-- **Supabase Auth (login obligatorio email+contraseña)** + sync por usuario. Activado solo si están
-  `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` (ver `.env.example`). Sin ellas → la app corre en **modo local**
-  (sin login, como el MVP). `src/lib/supabase.ts` (`supabaseEnabled`), `src/app/auth.tsx` (AuthProvider),
-  `src/components/AuthGate.tsx` + `AuthScreen.tsx`. Orden en `main.tsx`: ErrorBoundary → Auth → Store → Router.
-- **Sync (`src/lib/sync.ts`):** tabla `user_state` (RLS: `auth.uid()=user_id` → nadie ve datos ajenos).
-  Guarda prefs/favoritos/recientes + el blob de cada coach. NO sube las API keys de IA (quedan locales).
-  Pull al iniciar sesión (si vacío, sube lo local); push debounced desde el store (cambios) y CoachView (salir).
-- **SQL:** `supabase/migrations/0001_init.sql` (tabla + RLS + perfiles + trigger). Correr en Supabase → SQL Editor.
-- **Monitoreo (Sentry, opcional):** cliente `src/lib/monitoring.ts` (`VITE_SENTRY_DSN`), server `SENTRY_DSN`. Sin DSN = no-op.
-- **Setup para activar M6:** crear proyecto Supabase → copiar URL+anon key a `.env` (raíz) → correr el SQL →
-  (en Auth settings, decidir si exigís confirmación por email) → `npm run build`. Sentry: crear proyecto React + poner DSN.
-- Pendiente: rate-limit del proxy en multi-instancia → Redis (hoy en memoria, 1 instancia).
+- `GET /api/health` devuelve estado de salud.
+- Si existe `dist/`, sirve la PWA y los coaches en el mismo origen.
+- Assets estaticos versionados tienen cache largo; fallback SPA tiene `no-store`.
+- `x-powered-by` esta desactivado.
+- Sentry server es opcional con `SENTRY_DSN`.
+- No existe proxy IA ni endpoints con API keys.
+
+## Despliegue
+- Build productivo: `npm run build`.
+- Servir build en Node: `npm run server` despues de compilar, o `npm run serve` para build + server.
+- Targets previstos: web estatica/PWA, Node all-in-one, Capacitor Android/iOS.
+- Subpath, por ejemplo `/flowin/`: configurar `base` en `vite.config.ts` y reconstruir.
+- Produccion real debe definir hosting, HTTPS, headers, cache, monitoreo, CI/CD y rollback.
+
+## Cuentas + nube + monitoreo
+- Supabase Auth se activa con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`.
+- Sin esas envs, Flowin corre en modo local.
+- `supabase/migrations/0001_init.sql` crea `user_state`, `profiles` y RLS por usuario.
+- `src/lib/sync.ts` guarda prefs/favoritos/recientes y blobs de cada coach; no sincroniza secretos privados.
+- Sentry cliente es opcional con `VITE_SENTRY_DSN`; server con `SENTRY_DSN`.
 
 ## Estado actual
-M0–M3 hechos: catálogo + búsqueda/filtro, abrir coach en iframe, volver con scroll, favoritos,
-recientes/continuar, tema claro/oscuro, onboarding, persistencia local, PWA instalable + offline.
-12 coaches reales cargados (10 del Suite + Agenda + Planificador). IA opcional (Gemini) integrada.
-Arreglos aplicados: quitado el link roto "Volver al hub" (404) en los 10 coaches del Suite;
-hábitos ya no da 6 pts gratis en día vacío; corregido texto del motor de Salud.
+MVP web/PWA con 12 coaches reales: 10 del Suite + Agenda + Planificador.
+Se quitaron datos de prueba/personales y referencias con nombre propio.
+La IA fue eliminada por decision de producto; quedan consejos locales profesionales.
 
-**Pendiente:** M5 Capacitor (build Android/iOS, íconos/splash nativos, pruebas en dispositivo).
-M6 futuro: cuentas + sync (Supabase), monetización, notificaciones.
+Produccion local verificada con `npm run build` + `npm run server`.
+
+Pendiente natural:
+- Preparar commit y remoto Git.
+- Configurar hosting/deploy.
+- Empaquetar Android/iOS con Capacitor.
+- Definir estrategia desktop web/PWA o wrapper si se requiere app instalable de escritorio.

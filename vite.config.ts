@@ -4,7 +4,6 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // CSP solo en el build de producción (en dev rompería el HMR de Vite, que usa
 // inline + eval). Cubre el shell; los coaches son documentos aparte (su iframe).
-// Nota: si usás un proxy en OTRO origen, agregá su URL a connect-src.
 const CSP = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -13,7 +12,7 @@ const CSP = [
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
   "script-src 'self'",
-  "connect-src 'self' https://generativelanguage.googleapis.com https://api.anthropic.com https://api.openai.com",
+  "connect-src 'self'",
   "frame-src 'self'",
   "form-action 'self'"
 ].join("; ");
@@ -34,12 +33,6 @@ function cspPlugin(): Plugin {
 // Flowin shell. Los coaches viven en /public/coaches/<id>/index.html y se
 // sirven como estáticos; el shell los abre en un <iframe sandbox>.
 export default defineConfig({
-  // En dev, reenvía /api al server proxy (npm run server en :8787) para ChatGPT.
-  server: {
-    proxy: {
-      "/api": { target: "http://localhost:8787", changeOrigin: true }
-    }
-  },
   plugins: [
     cspPlugin(),
     react(),

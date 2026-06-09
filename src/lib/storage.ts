@@ -66,6 +66,15 @@ export async function toggleFavorite(coachId: string): Promise<string[]> {
   return next;
 }
 
+// Setters "raw" para guardar exactamente lo que ya tiene el estado del shell
+// (evita races por re-lectura cuando hay toggles rápidos).
+export async function setFavorites(ids: string[]): Promise<void> {
+  await localforage.setItem(K.favorites, ids);
+}
+export async function setRecents(r: RecentEntry[]): Promise<void> {
+  await localforage.setItem(K.recents, r);
+}
+
 // ---- Recientes / Continuar (RF-06) ----
 const MAX_RECENTS = 12;
 

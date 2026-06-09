@@ -26,6 +26,34 @@ function readState(id: string): CoachState | null {
   }
 }
 
+// ¿El coach tiene datos REALES del usuario? (no solo seed/config por defecto).
+// Sin datos, el coach emite PUNTAJE 0 / 🔴, que no es un "estado malo" sino
+// "todavía no registraste nada" → mostramos su tip, no una alerta roja falsa.
+function coachHasData(coach: Coach): boolean {
+  try {
+    const r = localStorage.getItem(coach.storageKey);
+    if (!r) return false;
+    const o = JSON.parse(r) as unknown;
+    if (Array.isArray(o)) return o.length > 0; // agenda
+    if (o && typeof o === "object") {
+      const obj = o as Record<string, unknown>;
+      if (Array.isArray(obj.entries)) return obj.entries.length > 0; // coaches del Suite
+      if (Array.isArray(obj.entrenos) || Array.isArray(obj.cuerpo)) {
+        // gym
+        return (
+          (Array.isArray(obj.entrenos) && obj.entrenos.length > 0) ||
+          (Array.isArray(obj.cuerpo) && obj.cuerpo.length > 0)
+        );
+      }
+      // finanzas u otros: algún array con elementos
+      return Object.values(obj).some((v) => Array.isArray(v) && v.length > 0);
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export type Sem = "green" | "yellow" | "red";
 
 export type Advice = {
@@ -47,7 +75,8 @@ function semFromEstado(estado?: string | null): Sem | null {
 }
 
 export function adviceFor(coach: Coach): Advice {
-  const s = readState(coach.id);
+  // Sin datos reales → ignoramos el estado 0/🔴 que emite el coach vacío.
+  const s = coachHasData(coach) ? readState(coach.id) : null;
   const puntaje =
     typeof s?.PUNTAJE === "number" && isFinite(s.PUNTAJE) ? Math.round(s.PUNTAJE) : null;
   const estado = (s?.ESTADO as string) ?? null;
@@ -93,7 +122,9 @@ export function lifeSummary(): LifeSummary {
   } else if (focus && focus.sem === "yellow") {
     headline = `Vas bien en general. Lo más flojo: ${focus.coach.name} (${focus.puntaje}) — dale una mano.`;
   } else {
-    headline = `Estás sólido en tus ${scored.length} áreas con datos. Sostené la constancia.`;
+    const areas =
+      scored.length === 1 ? "tu área con datos" : `tus ${scored.length} áreas con datos`;
+    headline = `Estás sólido en ${areas}. Sostené la constancia.`;
   }
   return { items, focus, strong, withState: scored.length, headline };
 }
