@@ -10,11 +10,24 @@ export type CoachMessage =
 
 export type ShellMessage = { type: "PROGRESS_LOAD_RESPONSE"; payload: unknown };
 
+// Fila de estado que emiten los coaches del Suite (COACH_ID, PUNTAJE, ESTADO,
+// ALERTA, RECOMENDACION…). El shell la usa para los consejos locales.
+export type CoachState = {
+  COACH_ID?: string;
+  AREA?: string;
+  PUNTAJE?: number;
+  ESTADO?: string;
+  ALERTA?: string;
+  RECOMENDACION?: string;
+  [k: string]: unknown;
+};
+
 type Handlers = {
   onReady?: () => void;
   onProgressSave?: (payload: unknown) => void;
   onLoadRequest?: () => void;
   onNavigateBack?: () => void;
+  onState?: (state: CoachState) => void;
 };
 
 // Escucha mensajes de un iframe coach. Devuelve función de limpieza.
@@ -25,6 +38,12 @@ export function listenToCoach(
   function onMessage(ev: MessageEvent) {
     // Aceptar solo mensajes del propio iframe (mismo origen).
     if (ev.source !== iframe.contentWindow) return;
+    const raw = ev.data as { __flowin?: string; payload?: CoachState } | undefined;
+    // Estado emitido por los coaches del Suite ({__flowin:'state', payload}).
+    if (raw && raw.__flowin === "state" && raw.payload) {
+      handlers.onState?.(raw.payload);
+      return;
+    }
     const msg = ev.data as CoachMessage | undefined;
     if (!msg || typeof msg.type !== "string") return;
     switch (msg.type) {

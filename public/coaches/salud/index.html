@@ -230,7 +230,7 @@ SPEC.blank=function(){var t=new Date().toISOString().slice(0,10);return {'Fecha'
   function render(){
     document.body.style.setProperty('--accent',S.accent);
     document.title=S.num+' — '+S.title+' · Coach Suite';
-    const c=compute();
+    const c=compute();try{if(window.parent&&window.parent!==window)window.parent.postMessage({__flowin:"state",payload:c.exportRow},"*");}catch(e){}
     const app=$('#app');
     app.innerHTML=`
       <div class="wrap">
@@ -406,7 +406,7 @@ SPEC.blank=function(){var t=new Date().toISOString().slice(0,10);return {'Fecha'
   }
   function bindExport(c){ $('#viewbox').querySelectorAll('[data-exp]').forEach(b=>b.onclick=()=>doExport(b.dataset.exp)); }
   function doExport(kind){
-    const c=compute();
+    const c=compute();try{if(window.parent&&window.parent!==window)window.parent.postMessage({__flowin:"state",payload:c.exportRow},"*");}catch(e){}
     if(kind==='row'){ copy(JSON.stringify(c.exportRow,null,2)); toast('Fila Export copiada'); }
     else if(kind==='json'){ dl(S.num+'_'+S.id+'.json', JSON.stringify({coach:S.id,config:state.cfg,export:c.exportRow,entradas:state.entries},null,2)); }
     else if(kind==='csv'){
@@ -420,7 +420,7 @@ SPEC.blank=function(){var t=new Date().toISOString().slice(0,10);return {'Fecha'
   }
 
   function refreshHeader(){
-    const c=compute();
+    const c=compute();try{if(window.parent&&window.parent!==window)window.parent.postMessage({__flowin:"state",payload:c.exportRow},"*");}catch(e){}
     const hs=document.getElementById('hScore'); if(hs)hs.textContent=H.R(c.agg.puntaje);
     const he=document.getElementById('hEstado'); if(he){he.textContent=c.est.label;he.className='sem-'+c.est.sem;he.style.fontWeight=700;
       const dot=he.previousElementSibling; if(dot)dot.className='dot bg-'+c.est.sem;}

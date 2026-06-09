@@ -6,6 +6,7 @@ import type { Coach } from "../types";
 export const COACHES: Coach[] = [
   {
     id: "habitos",
+    tip: "Elegí 2-3 hábitos base y sostenelos a diario. La constancia vale más que la intensidad.",
     storageKey: "flowin_coach_v1_04",
     slug: "habitos",
     name: "Hábitos y Disciplina",
@@ -23,6 +24,7 @@ export const COACHES: Coach[] = [
   },
   {
     id: "metas",
+    tip: "Pocas metas, con métrica y fecha. Revisá el avance cada semana.",
     storageKey: "flowin_coach_v1_05",
     slug: "metas",
     name: "Metas y OKR Personal",
@@ -39,6 +41,7 @@ export const COACHES: Coach[] = [
   },
   {
     id: "negocios",
+    tip: "Atendé primero los leads de mayor valor y los que se están por enfriar.",
     storageKey: "flowin_coach_v1_06",
     slug: "negocios",
     name: "Negocios y Ventas",
@@ -56,6 +59,7 @@ export const COACHES: Coach[] = [
   },
   {
     id: "proyectos",
+    tip: "Desbloqueá lo trabado antes de sumar features. Una entrega concreta por semana.",
     storageKey: "flowin_coach_v1_07",
     slug: "proyectos",
     name: "Proyectos y Apps",
@@ -71,6 +75,7 @@ export const COACHES: Coach[] = [
   },
   {
     id: "contenido",
+    tip: "Publicá seguido y simple. Repetí los formatos que más enganchan.",
     storageKey: "flowin_coach_v1_08",
     slug: "contenido",
     name: "Contenido y Marca Personal",
@@ -87,6 +92,7 @@ export const COACHES: Coach[] = [
   },
   {
     id: "aprendizaje",
+    tip: "Bloques cortos diarios + una evidencia por sesión. Repasá lo que no entendiste.",
     storageKey: "flowin_coach_v1_09",
     slug: "aprendizaje",
     name: "Aprendizaje y Habilidades",
@@ -103,6 +109,7 @@ export const COACHES: Coach[] = [
   },
   {
     id: "salud",
+    tip: "Cuidá sueño e hidratación. Si dolor o fatiga suben, bajá la carga. No reemplaza criterio médico.",
     storageKey: "flowin_coach_v1_10",
     slug: "salud",
     name: "Salud y Recuperación",
@@ -120,6 +127,7 @@ export const COACHES: Coach[] = [
   },
   {
     id: "decisiones",
+    tip: "Antes de comprar: necesidad, beneficio, presupuesto y riesgo. Si dudás, esperá.",
     storageKey: "flowin_coach_v1_11",
     slug: "decisiones",
     name: "Decisiones y Compras",
@@ -137,6 +145,7 @@ export const COACHES: Coach[] = [
   },
   {
     id: "relaciones",
+    tip: "Contactá primero a los de alta prioridad con seguimiento vencido. Cumplí lo que prometés.",
     storageKey: "flowin_coach_v1_12",
     slug: "relaciones",
     name: "Relaciones y Networking",
@@ -153,6 +162,7 @@ export const COACHES: Coach[] = [
   },
   {
     id: "gym",
+    tip: "Definí perfil y objetivo, seguí tu plan y registrá entrenos y peso. Proteína y descanso primero.",
     storageKey: "gym_v1",
     slug: "gym",
     name: "Gym Coach App",
@@ -170,6 +180,7 @@ export const COACHES: Coach[] = [
   },
   {
     id: "agenda",
+    tip: "Cargá tu día por bloques y marcá lo vencido. Empezá por lo más importante.",
     storageKey: "agenda",
     slug: "agenda",
     name: "Agenda",
@@ -187,6 +198,7 @@ export const COACHES: Coach[] = [
   },
   {
     id: "finanzas",
+    tip: "Anotá ingresos y gastos del mes. Apuntá al 50/30/20 y cuidá las deudas.",
     storageKey: "finanzas_planificador_v1",
     slug: "finanzas",
     name: "Planificador Financiero",

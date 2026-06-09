@@ -13,6 +13,7 @@ export type Coach = {
   version: string;
   supportsProgress: boolean; // exporta fila estándar COACH_ID/PUNTAJE/...
   storageKey: string; // clave localStorage donde el coach guarda su estado
+  tip: string; // consejo por defecto (cuando no hay estado calculado)
 };
 
 export type Theme = "light" | "dark";

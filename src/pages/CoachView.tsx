@@ -3,8 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { getCoachBySlug } from "../data/coaches";
 import { useStore } from "../app/store";
 import { listenToCoach } from "../lib/coachBridge";
-import { aiReady, analyzeCoach } from "../lib/ai";
-import { AnalysisModal } from "../components/AnalysisModal";
+import { saveCoachState } from "../lib/advice";
 import { schedulePush } from "../lib/sync";
 
 export default function CoachView() {
@@ -13,8 +12,6 @@ export default function CoachView() {
   const { prefs, isFavorite, toggleFavorite, registerOpen } = useStore();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [loaded, setLoaded] = useState(false);
-  const [aiOpen, setAiOpen] = useState(false);
-  const showAI = aiReady();
 
   const coach = slug ? getCoachBySlug(slug) : undefined;
 
@@ -26,15 +23,19 @@ export default function CoachView() {
   // Al salir del coach, subir su progreso a la nube (M6, no-op sin sesión).
   useEffect(() => () => schedulePush(), []);
 
-  // Puente opcional: si el coach pide volver (NAVIGATE_BACK) o avisa que cargó.
+  // Puente con el coach: cargó, pidió volver, o emitió su estado (para los
+  // consejos locales de "Mi vida").
   useEffect(() => {
     const el = iframeRef.current;
     if (!el) return;
     return listenToCoach(el, {
       onReady: () => setLoaded(true),
-      onNavigateBack: () => navigate(-1)
+      onNavigateBack: () => navigate(-1),
+      onState: (s) => {
+        if (coach) saveCoachState(coach.id, s);
+      }
     });
-  }, [navigate]);
+  }, [navigate, coach]);
 
   if (!coach) {
     return (
@@ -82,16 +83,6 @@ export default function CoachView() {
           </div>
           <p className="truncate text-[11px] shell-muted">{coach.category}</p>
         </div>
-        {showAI && (
-          <button
-            onClick={() => setAiOpen(true)}
-            aria-label="Analizar con IA"
-            title="Analizar con IA"
-            className="grid h-9 w-9 place-items-center rounded-lg text-lg transition hover:scale-110"
-          >
-            ✨
-          </button>
-        )}
         <button
           onClick={() => toggleFavorite(coach.id)}
           aria-label={fav ? "Quitar de favoritos" : "Agregar a favoritos"}
@@ -100,14 +91,6 @@ export default function CoachView() {
           {fav ? "⭐" : "☆"}
         </button>
       </header>
-
-      <AnalysisModal
-        open={aiOpen}
-        title={`Análisis · ${coach.name}`}
-        subtitle="Diagnóstico y plan de la semana"
-        runner={() => analyzeCoach(coach.id)}
-        onClose={() => setAiOpen(false)}
-      />
 
       {/* Coach autocontenido, aislado en iframe sandbox (RNF-05/RNF-06).
           allow-scripts + allow-same-origin: los coaches usan localStorage para
