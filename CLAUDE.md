@@ -68,6 +68,11 @@ Cero cambios en el shell.
   (pasos PC y móvil) + badge `free`. Gemini marcado "gratis/recomendado". La guía se renderiza colapsable
   con el link directo a sacar la key. Editar pasos = editar `PROVIDERS`.
 - Modelos elegibles por proveedor (Gemini default `gemini-2.0-flash`, Claude `claude-sonnet-4-6`, OpenAI `gpt-4o-mini`). Si un model id falla (404), elegir otro.
+- **Modo cero-config (server-keyed):** si el dueño pone una key en `server/.env`, el cliente la detecta vía
+  `GET /api/ai/status` (`refreshServerStatus`/`serverHasKey` en `ai.ts`) y muestra "IA lista vía el servidor —
+  no necesitás pegar ninguna clave". `call()` rutea por el proxy con key vacía (la pone el server). Ajustes
+  muestra banner verde y vuelve la key opcional. Es la forma más fácil. **No existe OAuth "sign in with
+  Claude/Gemini/OpenAI" para usar la suscripción del usuario** — API ≠ suscripción consumidor; siempre es key.
 
 ## Server (proxy IA + deploy todo-en-uno)
 - `server/index.js` (Express). `npm run server` → `http://localhost:8787`.

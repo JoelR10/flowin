@@ -161,6 +161,20 @@ const CALLERS = { gemini: callGemini, anthropic: callAnthropic, openai: callOpen
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
+// Qué proveedores tiene el server con key propia (.env) → el cliente usa esto
+// para ofrecer IA "lista, sin pegar key". Devuelve solo booleanos, nunca las keys.
+app.get("/api/ai/status", (req, res) => {
+  if (APP_TOKEN && req.get("x-flowin-token") !== APP_TOKEN)
+    return res.status(401).json({ error: "Token del servidor inválido." });
+  res.json({
+    providers: {
+      gemini: Boolean(process.env.GEMINI_API_KEY),
+      anthropic: Boolean(process.env.ANTHROPIC_API_KEY),
+      openai: Boolean(process.env.OPENAI_API_KEY)
+    }
+  });
+});
+
 app.post("/api/ai", async (req, res) => {
   const ip = req.ip || req.socket?.remoteAddress || "?";
   if (rateLimited(ip))

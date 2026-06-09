@@ -142,11 +142,47 @@ export function setAIConfig(cfg: AIConfig): void {
   }
 }
 
+// Qué proveedores tiene el server con key propia (.env). Lo consulta el cliente
+// para ofrecer IA "lista, sin pegar key". Cacheado en memoria.
+let serverKeys: Record<Provider, boolean> = {
+  gemini: false,
+  anthropic: false,
+  openai: false
+};
+
+function statusUrl(proxyUrl: string): string {
+  return `${proxyUrl.replace(/\/$/, "")}/status`;
+}
+
+export async function refreshServerStatus(cfg = getAIConfig()): Promise<void> {
+  const proxy = (cfg.proxyUrl ?? "").trim();
+  if (!proxy) return;
+  try {
+    const headers: Record<string, string> = {};
+    if (cfg.proxyToken) headers["x-flowin-token"] = cfg.proxyToken;
+    const r = await fetch(statusUrl(proxy), { headers });
+    if (r.ok) {
+      const d = await r.json();
+      if (d?.providers) serverKeys = { ...serverKeys, ...d.providers };
+    }
+  } catch {
+    /* server no disponible → seguimos con keys del cliente */
+  }
+}
+
+export function serverHasKey(p: Provider): boolean {
+  return serverKeys[p];
+}
+
 export function aiReady(cfg = getAIConfig()): boolean {
   if (!cfg.enabled) return false;
-  // ChatGPT pasa por el server (la key puede vivir en el server) → basta el proxy.
-  if (cfg.provider === "openai") return (cfg.proxyUrl ?? "").trim().length > 0;
-  return (cfg.keys[cfg.provider] ?? "").trim().length > 0;
+  const proxy = (cfg.proxyUrl ?? "").trim();
+  // El server tiene la key del proveedor → IA lista, sin key del usuario.
+  if (serverKeys[cfg.provider] && proxy) return true;
+  const hasClientKey = (cfg.keys[cfg.provider] ?? "").trim().length > 0;
+  // ChatGPT necesita el proxy aunque el user tenga su key (OpenAI bloquea el navegador).
+  if (cfg.provider === "openai") return hasClientKey && proxy.length > 0;
+  return hasClientKey;
 }
 
 const SYSTEM = `Sos el coach personal de Flowin: directo, cálido y práctico. Hablás en español rioplatense, claro y sin vueltas.
@@ -273,19 +309,26 @@ async function callProxy(
 }
 
 async function call(user: string, cfg: AIConfig): Promise<string> {
-  const key = (cfg.keys[cfg.provider] ?? "").trim();
-  const model = cfg.models[cfg.provider];
-  // ChatGPT → siempre por el proxy (OpenAI bloquea el navegador). La key puede
-  // ir vacía si el server la tiene en su .env.
-  if (cfg.provider === "openai") {
-    const proxy = (cfg.proxyUrl ?? "").trim();
+  const provider = cfg.provider;
+  const key = (cfg.keys[provider] ?? "").trim();
+  const model = cfg.models[provider];
+  const proxy = (cfg.proxyUrl ?? "").trim();
+  const token = (cfg.proxyToken ?? "").trim();
+
+  // 1) El server tiene la key → proxy con key vacía (la pone el server). Cero config para el user.
+  if (serverHasKey(provider) && proxy) return callProxy(user, provider, model, "", proxy, token);
+
+  // 2) ChatGPT siempre por proxy (OpenAI bloquea el navegador) con la key del cliente.
+  if (provider === "openai") {
     if (!proxy)
       throw new Error("ChatGPT necesita el servidor. Configurá la URL del proxy en Ajustes.");
-    return callProxy(user, "openai", model, key, proxy, (cfg.proxyToken ?? "").trim());
+    if (!key) throw new Error("Falta tu API key de OpenAI (o que el server tenga una).");
+    return callProxy(user, "openai", model, key, proxy, token);
   }
+
+  // 3) Gemini/Claude directo desde el navegador con la key del cliente.
   if (!key) throw new Error("Falta la API key. Activala en Ajustes.");
-  if (cfg.provider === "anthropic") return callAnthropic(user, model, key);
-  return callGemini(user, model, key);
+  return provider === "anthropic" ? callAnthropic(user, model, key) : callGemini(user, model, key);
 }
 
 // ---- Prompts ----

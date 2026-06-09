@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "../app/store";
 import { useAuth } from "../app/auth";
 import { supabaseEnabled } from "../lib/supabase";
+import { refreshServerStatus, serverHasKey } from "../lib/ai";
 import {
   MODELS,
   PROVIDERS,
@@ -21,6 +22,13 @@ export default function Ajustes() {
 
   const [ai, setAi] = useState<AIConfig>(getAIConfig());
   const [guide, setGuide] = useState(true);
+  const [, forceTick] = useState(0);
+
+  // Consulta si el servidor ya tiene keys → IA sin pedir nada al usuario.
+  useEffect(() => {
+    void refreshServerStatus().then(() => forceTick((t) => t + 1));
+  }, []);
+  const viaServer = serverHasKey(ai.provider);
   const [test, setTest] = useState<{ state: "idle" | "loading" | "ok" | "err"; msg: string }>({
     state: "idle",
     msg: ""
@@ -137,6 +145,13 @@ export default function Ajustes() {
                 </div>
               </div>
 
+              {viaServer && (
+                <div className="rounded-xl border border-green-500/40 bg-green-500/10 p-3 text-xs text-green-500">
+                  ✓ IA lista vía el servidor de Flowin — <b>no necesitás pegar ninguna clave</b>.
+                  Ya podés analizar tus coaches. (Si querés, podés usar tu propia clave abajo.)
+                </div>
+              )}
+
               {/* Guía rápida por proveedor (PC y móvil) */}
               <div className="rounded-xl border shell-border p-3">
                 <p className="text-xs shell-muted">{prov.tagline}</p>
@@ -204,7 +219,7 @@ export default function Ajustes() {
               <div>
                 <label className="text-xs font-semibold shell-muted">
                   API key · {prov.label}
-                  {ai.provider === "openai" && " (opcional si el server tiene la key)"}
+                  {(viaServer || ai.provider === "openai") && " (opcional · el servidor ya tiene una)"}
                 </label>
                 <input
                   type="password"
