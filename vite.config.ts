@@ -35,9 +35,14 @@ function cspPlugin(): Plugin {
   };
 }
 
+// Base configurable: "/" por defecto (local, Capacitor, Electron); en GitHub
+// Pages el CI exporta VITE_BASE=/flowin/ porque el sitio vive en un subpath.
+const base = process.env.VITE_BASE || "/";
+
 // Flowin shell. Los coaches viven en /public/coaches/<id>/index.html y se
 // sirven como estáticos; el shell los abre en un <iframe sandbox>.
 export default defineConfig({
+  base,
   plugins: [
     cspPlugin(),
     react(),
@@ -53,8 +58,8 @@ export default defineConfig({
         background_color: "#0a0d13",
         display: "standalone",
         orientation: "portrait",
-        start_url: "/",
-        scope: "/",
+        start_url: base,
+        scope: base,
         icons: [
           { src: "icons/icon-192.png", sizes: "192x192", type: "image/png" },
           { src: "icons/icon-512.png", sizes: "512x512", type: "image/png" },
@@ -67,10 +72,11 @@ export default defineConfig({
         // Los coaches son grandes y vendor/babel pesa ~3MB: NO precachear,
         // cachear en runtime → "un coach ya visitado funciona offline" (RF-11).
         globIgnores: ["**/coaches/**"],
-        navigateFallbackDenylist: [/^\/coaches\//],
+        // Sin anclar al inicio: bajo subpath la ruta es /flowin/coaches/...
+        navigateFallbackDenylist: [/\/coaches\//],
         runtimeCaching: [
           {
-            urlPattern: ({ url }) => url.pathname.startsWith("/coaches/"),
+            urlPattern: ({ url }) => url.pathname.includes("/coaches/"),
             handler: "StaleWhileRevalidate",
             options: {
               cacheName: "flowin-coaches",
