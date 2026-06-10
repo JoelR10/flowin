@@ -21,15 +21,26 @@
   "build": {
     "appId": "com.flowin.app",
     "productName": "Flowin",
-    "directories": { "output": "dist-electron" },
-    "files": ["electron/**", "dist/**"],
-    "win": { "target": "portable", "icon": "public/icons/icon-512.png" },
-    "portable": { "artifactName": "Flowin-${version}-portable.exe" }
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "electron/**",
+      "dist/**"
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "public/icons/icon-512.png"
+    },
+    "portable": {
+      "artifactName": "Flowin-${version}-portable.exe"
+    }
   },
   "dependencies": {
     "@capacitor/android": "^8.4.0",
     "@capacitor/cli": "^8.4.0",
     "@capacitor/core": "^8.4.0",
+    "@clerk/clerk-react": "^5.61.8",
     "@sentry/node": "^10.56.0",
     "@sentry/react": "^10.56.0",
     "@supabase/supabase-js": "^2.108.0",

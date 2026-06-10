@@ -4,18 +4,21 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // CSP solo en el build de producción (en dev rompería el HMR de Vite, que usa
 // inline + eval). Cubre el shell; los coaches son documentos aparte (su iframe).
-// connect-src incluye Supabase (auth + sync + realtime). Si usás Supabase
-// self-hosted en otro dominio, agregalo acá.
+// - Supabase (sync/realtime): *.supabase.co. Self-hosted en otro dominio → agregalo.
+// - Clerk (login Google + correo): carga clerk.browser.js desde su Frontend API
+//   y llama a su API. Dev = *.clerk.accounts.dev. Si usás dominio propio de Clerk
+//   (clerk.tudominio.com), agregá ese host a script-src y connect-src.
 const CSP = [
   "default-src 'self'",
   "base-uri 'self'",
   "object-src 'none'",
-  "img-src 'self' data:",
+  "img-src 'self' data: https://img.clerk.com https://*.googleusercontent.com",
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
-  "script-src 'self'",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
-  "frame-src 'self'",
+  "script-src 'self' https://*.clerk.accounts.dev https://*.clerk.com",
+  "worker-src 'self' blob:",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.clerk.accounts.dev https://*.clerk.com https://clerk-telemetry.com",
+  "frame-src 'self' https://*.clerk.accounts.dev https://challenges.cloudflare.com https://accounts.google.com",
   "form-action 'self'"
 ].join("; ");
 

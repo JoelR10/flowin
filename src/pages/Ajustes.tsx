@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useStore } from "../app/store";
 import { useAuth } from "../app/auth";
+import { clerkEnabled } from "../lib/clerk";
 import { supabaseEnabled } from "../lib/supabase";
 
 export default function Ajustes() {
@@ -35,8 +36,8 @@ export default function Ajustes() {
           </button>
         </div>
 
-        {/* Cuenta (M6) — solo si Supabase está configurado */}
-        {supabaseEnabled && email && (
+        {/* Cuenta — solo si Clerk está configurado (login activo) */}
+        {clerkEnabled && email && (
           <div className="shell-card flex items-center justify-between rounded-2xl p-4">
             <div className="min-w-0 pr-3">
               <p className="font-semibold">Cuenta</p>
@@ -55,9 +56,11 @@ export default function Ajustes() {
       </div>
 
       <p className="shell-muted mt-6 text-xs leading-relaxed">
-        {supabaseEnabled
+        {clerkEnabled && supabaseEnabled
           ? "Tus datos se sincronizan con tu cuenta y cada usuario ve solo lo suyo. También quedan en este dispositivo para uso offline."
-          : "Tus datos (preferencias, favoritos y el progreso de cada coach) viven en este dispositivo. No hay cuenta ni servidor."}
+          : clerkEnabled
+            ? "Tu cuenta solo controla el acceso. Tus datos (preferencias, favoritos y progreso) viven en este dispositivo."
+            : "Tus datos (preferencias, favoritos y el progreso de cada coach) viven en este dispositivo. No hay cuenta ni servidor."}
       </p>
     </div>
   );

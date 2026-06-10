@@ -1,105 +1,100 @@
 import {
   createContext,
-  useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
   type ReactNode
 } from "react";
-import type { Session } from "@supabase/supabase-js";
-import { supabase, supabaseEnabled } from "../lib/supabase";
+import {
+  ClerkProvider,
+  useAuth as useClerkAuth,
+  useClerk,
+  useUser
+} from "@clerk/clerk-react";
+import { clerkEnabled, clerkPublishableKey } from "../lib/clerk";
+import { supabaseEnabled } from "../lib/supabase";
 import { pullAll, pushAll, setSyncUser } from "../lib/sync";
 
 type AuthCtx = {
   ready: boolean; // auth inicializado
-  session: Session | null;
-  synced: boolean; // datos de la nube ya traídos
+  signedIn: boolean; // hay sesión
+  synced: boolean; // datos de la nube ya traídos (true si no hay Supabase)
   email: string | null;
-  signIn: (email: string, password: string) => Promise<string | null>;
-  signUp: (email: string, password: string) => Promise<string | null>;
   signOut: () => Promise<void>;
 };
 
 const Ctx = createContext<AuthCtx | null>(null);
 
-function mapError(msg: string): string {
-  if (/invalid login/i.test(msg)) return "Email o contraseña incorrectos.";
-  if (/already registered/i.test(msg)) return "Ese email ya tiene cuenta. Iniciá sesión.";
-  if (/password should be/i.test(msg)) return "La contraseña es muy corta (mínimo 6).";
-  if (/confirm/i.test(msg)) return "Revisá tu email para confirmar la cuenta.";
-  return msg;
+// Modo local (sin Clerk configurado): todo abierto, sin login ni sync.
+function LocalProvider({ children }: { children: ReactNode }) {
+  const value = useMemo<AuthCtx>(
+    () => ({ ready: true, signedIn: true, synced: true, email: null, signOut: async () => {} }),
+    []
+  );
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [ready, setReady] = useState(!supabaseEnabled); // sin Supabase: listo ya
-  const [session, setSession] = useState<Session | null>(null);
+// Puente Clerk → Flowin. Vive dentro de <ClerkProvider>. Conecta la sesión de
+// Clerk con el sync de Supabase (RLS por el id de usuario de Clerk).
+function ClerkBridge({ children }: { children: ReactNode }) {
+  const { isLoaded, isSignedIn, userId } = useClerkAuth();
+  const { user } = useUser();
+  const clerk = useClerk();
   const [synced, setSynced] = useState(false);
 
-  // Al haber sesión: traer la nube; si está vacía, subir lo local (migración).
-  const onSession = useCallback(async (s: Session | null) => {
-    setSession(s);
-    if (s?.user) {
-      setSyncUser(s.user.id);
-      try {
-        const n = await pullAll();
-        if (n === 0) await pushAll();
-      } catch {
-        /* sync best-effort */
-      }
-      setSynced(true);
+  useEffect(() => {
+    if (!isLoaded) return;
+    let alive = true;
+    if (isSignedIn && userId) {
+      setSyncUser(userId);
+      void (async () => {
+        if (supabaseEnabled) {
+          try {
+            const n = await pullAll();
+            if (n === 0) await pushAll();
+          } catch {
+            /* sync best-effort */
+          }
+        }
+        if (alive) setSynced(true);
+      })();
     } else {
       setSyncUser(null);
       setSynced(false);
     }
-  }, []);
-
-  useEffect(() => {
-    if (!supabaseEnabled || !supabase) return;
-    let alive = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (!alive) return;
-      void onSession(data.session).finally(() => setReady(true));
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
-      void onSession(s);
-    });
     return () => {
       alive = false;
-      sub.subscription.unsubscribe();
     };
-  }, [onSession]);
-
-  const signIn = useCallback(async (em: string, pw: string) => {
-    if (!supabase) return "Supabase no configurado.";
-    const { error } = await supabase.auth.signInWithPassword({ email: em, password: pw });
-    return error ? mapError(error.message) : null;
-  }, []);
-
-  const signUp = useCallback(async (em: string, pw: string) => {
-    if (!supabase) return "Supabase no configurado.";
-    const { error } = await supabase.auth.signUp({ email: em, password: pw });
-    return error ? mapError(error.message) : null;
-  }, []);
-
-  const signOut = useCallback(async () => {
-    if (supabase) await supabase.auth.signOut();
-  }, []);
+  }, [isLoaded, isSignedIn, userId]);
 
   const value = useMemo<AuthCtx>(
     () => ({
-      ready,
-      session,
-      synced,
-      email: session?.user?.email ?? null,
-      signIn,
-      signUp,
-      signOut
+      ready: isLoaded,
+      signedIn: Boolean(isSignedIn),
+      synced: supabaseEnabled ? synced : true,
+      email: user?.primaryEmailAddress?.emailAddress ?? null,
+      signOut: async () => {
+        await clerk.signOut();
+      }
     }),
-    [ready, session, synced, signIn, signUp, signOut]
+    [isLoaded, isSignedIn, synced, user, clerk]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  if (!clerkEnabled) return <LocalProvider>{children}</LocalProvider>;
+  return (
+    <ClerkProvider
+      publishableKey={clerkPublishableKey as string}
+      afterSignOutUrl="/"
+      telemetry={false}
+    >
+      <ClerkBridge>{children}</ClerkBridge>
+    </ClerkProvider>
+  );
 }
 
 export function useAuth(): AuthCtx {

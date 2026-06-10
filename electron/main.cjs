@@ -54,7 +54,14 @@ function startServer() {
         res.end(data);
       });
     });
-    srv.listen(0, "127.0.0.1", () => resolve(srv.address().port));
+    // Puerto FIJO para que el origen (http://127.0.0.1:35790) sea registrable
+    // como "allowed origin" en Clerk y el redirect de Google OAuth vuelva bien.
+    // Si está ocupado, cae a un puerto libre (login por correo igual funciona).
+    const FIXED = 35790;
+    srv.once("error", () => {
+      if (!srv.listening) srv.listen(0, "127.0.0.1", () => resolve(srv.address().port));
+    });
+    srv.listen(FIXED, "127.0.0.1", () => resolve(srv.address().port));
   });
 }
 
@@ -77,6 +84,12 @@ async function createWindow() {
   });
   win.loadURL(`http://127.0.0.1:${port}/`);
 }
+
+// Google OAuth rechaza webviews embebidos ("disallowed_useragent"): sin el
+// token Electron/x.y.z en el UA, el login con Google funciona en la ventana.
+app.userAgentFallback = app.userAgentFallback
+  .replace(/\sElectron\/\S+/, "")
+  .replace(/\sflowin\/\S+/, "");
 
 app.whenReady().then(createWindow);
 app.on("activate", () => {
