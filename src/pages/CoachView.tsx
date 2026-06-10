@@ -110,6 +110,16 @@ export default function CoachView() {
           sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
           className="h-full w-full border-0 bg-white"
         />
+        {/* Volver al alcance del pulgar: en teléfonos altos la flecha del
+            header queda lejos; este botón flotante resuelve la una-mano. */}
+        <button
+          onClick={() => navigate(-1)}
+          aria-label="Volver"
+          className="absolute left-4 z-10 grid h-12 w-12 place-items-center rounded-full bg-ac text-xl font-bold text-black shadow-lg transition active:scale-95"
+          style={{ bottom: "calc(1rem + env(safe-area-inset-bottom))" }}
+        >
+          ←
+        </button>
       </div>
     </div>
   );

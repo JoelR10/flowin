@@ -34,6 +34,7 @@ a{color:inherit;text-decoration:none}
 .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
 .sem-green{color:var(--green)} .sem-yellow{color:var(--yellow)} .sem-red{color:var(--red)}
 .bg-green{background:var(--green)} .bg-yellow{background:var(--yellow)} .bg-red{background:var(--red)}
+.bg-none{background:#8b949e} .sem-none{color:#8b949e}
 .subtitle{color:var(--mut);font-size:13.5px;margin:0 0 18px;max-width:760px}
 /* layout */
 .shell{display:grid;grid-template-columns:208px 1fr;gap:20px;align-items:start}
@@ -199,8 +200,8 @@ SPEC.blank=function(){var t=new Date().toISOString().slice(0,10);return {'Fecha'
   function compute(){
     const L=state.entries.map(enrichOne);
     const agg=S.aggregate(L,state.cfg)||{puntaje:0,kpis:[],alertas:[]};
-    const est=estadoOf(agg.puntaje);
-    const fired=(agg.alertas||[]).filter(a=>a.active).sort((a,b)=>(a.nivel==='Alta'?0:1)-(b.nivel==='Alta'?0:1));
+    const est=L.length?estadoOf(agg.puntaje):{label:'⚪ Sin datos',sem:'none'};
+    const fired=(L.length?(agg.alertas||[]):[]).filter(a=>a.active).sort((a,b)=>(a.nivel==='Alta'?0:1)-(b.nivel==='Alta'?0:1));
     const top=fired[0];
     const exportRow={
       COACH_ID:S.id, AREA:S.area, FECHA_CORTE:isoToday, PUNTAJE:H.R(agg.puntaje),
@@ -237,7 +238,7 @@ SPEC.blank=function(){var t=new Date().toISOString().slice(0,10);return {'Fecha'
           </div>
           <div class="spacer"></div>
           <div class="livebox">
-            <div><div class="num" id="hScore">${H.R(c.agg.puntaje)}</div><div class="lbl">Puntaje</div></div>
+            <div><div class="num" id="hScore">${c.L.length?H.R(c.agg.puntaje):'—'}</div><div class="lbl">Puntaje</div></div>
             <div><span class="dot bg-${c.est.sem}"></span><span id="hEstado" class="sem-${c.est.sem}" style="font-weight:700">${c.est.label}</span></div>
           </div>
         </div>
@@ -266,7 +267,7 @@ SPEC.blank=function(){var t=new Date().toISOString().slice(0,10);return {'Fecha'
   // ---------- RESUMEN ----------
   function gauge(p,sem){
     const C=2*Math.PI*52, off=C*(1-H.CLAMP(p,0,100)/100);
-    const col=sem==='green'?'var(--green)':sem==='yellow'?'var(--yellow)':'var(--red)';
+    const col=sem==='green'?'var(--green)':sem==='yellow'?'var(--yellow)':sem==='none'?'#8b949e':'var(--red)';
     return `<div class="gwrap"><svg class="gauge" viewBox="0 0 120 120">
       <circle class="bg" cx="60" cy="60" r="52"></circle>
       <circle class="fg" cx="60" cy="60" r="52" transform="rotate(-90 60 60)"
@@ -277,7 +278,11 @@ SPEC.blank=function(){var t=new Date().toISOString().slice(0,10);return {'Fecha'
     const k=(c.agg.kpis||[]).map(x=>`<div class="kpi"><div class="l">${x.label}</div>
        <div class="v">${x.value}</div>${x.meta?`<div class="m">${x.meta}</div>`:''}${x.lec?`<div class="lec">${x.lec}</div>`:''}</div>`).join('');
     const t=c.top;
-    const callout=`<div class="callout" style="border-color:${t?(t.nivel==='Alta'?'rgba(243,96,75,.4)':'rgba(216,162,54,.4)'):'rgba(63,185,80,.35)'}">
+    const callout=!c.L.length?`<div class="callout" style="border-color:rgba(139,148,158,.35)">
+       <div class="nivel" style="color:#8b949e">📝 Sin datos aún</div>
+       <h3>Registrá tu primera entrada</h3>
+       <p>Andá a la pestaña Entradas y cargá tu primer registro para ver tu puntaje, estado y alertas reales.</p>
+       <div class="estado-pill"><span class="dot bg-none"></span>⚪ Sin datos</div></div>`:`<div class="callout" style="border-color:${t?(t.nivel==='Alta'?'rgba(243,96,75,.4)':'rgba(216,162,54,.4)'):'rgba(63,185,80,.35)'}">
        <div class="nivel sem-${t?(t.nivel==='Alta'?'red':'yellow'):'green'}">${t?('⚠ Prioridad '+t.nivel+' · '+t.area):'✓ Sin alertas activas'}</div>
        <h3>${t?t.result.replace(/^🔴 |^🟡 /,''):'Todo en verde'}</h3>
        <p>${t?t.reco:(c.agg.recoOK||'Mantené el ritmo y seguí registrando.')}</p>
@@ -290,14 +295,14 @@ SPEC.blank=function(){var t=new Date().toISOString().slice(0,10);return {'Fecha'
   function expCard(c){
     const e=c.exportRow;
     const cells=Object.entries(e).map(([k,v])=>`<div class="e"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
-    return `<div class="card"><h2>Fila Export_Dashboard</h2>
-      <p class="hint">Esta es la salida estándar que conecta este coach con el resto de la suite.</p>
+    return `<div class="card"><details><summary style="cursor:pointer;font-weight:700">🔧 Exportar datos (técnico)</summary>
+      <p class="hint">Salida estándar para conectar o respaldar tus datos. Solo si la necesitás.</p>
       <div class="exp">${cells}</div>
       <div class="row-actions">
         <button class="btn sm" data-exp="row">Copiar fila</button>
         <button class="btn sm ghost" data-exp="json">Descargar JSON</button>
         <button class="btn sm ghost" data-exp="csv">Descargar CSV de entradas</button>
-      </div></div>`;
+      </div></details></div>`;
   }
 
   // ---------- CONFIG ----------

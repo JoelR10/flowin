@@ -269,10 +269,13 @@ td.calc{font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt);white
      <div class="mac"><div class="l">Agua guía</div><div class="v">${m.agua} L</div><div class="s">35 ml/kg</div></div>
     </div></div>`;
  }
- function bindPerfil(){$('#vb').querySelectorAll('[data-p]').forEach(el=>el.addEventListener('input',()=>{
-   let v=el.value; if(el.type==='number')v=v; st.perfil[el.dataset.p]=v; save();
-   if(['Objetivo','DiasPesas','Peso','Estatura','Edad','Sexo','Actividad'].includes(el.dataset.p))render(); else render();
- }));}
+ // Guarda mientras tipeás, pero recalcula el plan recién al confirmar el campo
+ // (change/blur): evita planes absurdos con valores a medio escribir ("1", "18").
+ function bindPerfil(){$('#vb').querySelectorAll('[data-p]').forEach(el=>{
+   const apply=()=>{st.perfil[el.dataset.p]=el.value; save();};
+   if(el.tagName==='SELECT'){ el.addEventListener('change',()=>{apply();render();}); }
+   else { el.addEventListener('input',apply); el.addEventListener('change',()=>{apply();render();}); }
+ });}
 
  // RUTINA
  function vRutina(){

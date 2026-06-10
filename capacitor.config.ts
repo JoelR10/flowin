@@ -12,7 +12,10 @@ const config: CapacitorConfig = {
   appName: "Flowin",
   webDir: "dist",
   backgroundColor: "#0a0d13",
-  android: { backgroundColor: "#0a0d13" },
+  // adjustMarginsForEdgeToEdge: Android 15+ (targetSdk 35) fuerza edge-to-edge
+  // y el WebView queda DEBAJO de la status bar (header tapado, textos cortados,
+  // visto en testing real). "auto" agrega los márgenes nativos correctos.
+  android: { backgroundColor: "#0a0d13", adjustMarginsForEdgeToEdge: "auto" },
   ios: { contentInset: "always" }
 };
 
