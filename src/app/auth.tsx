@@ -12,6 +12,7 @@ import {
   useClerk,
   useUser
 } from "@clerk/clerk-react";
+import { esES } from "@clerk/localizations";
 import { clerkEnabled, clerkPublishableKey } from "../lib/clerk";
 import { supabaseEnabled } from "../lib/supabase";
 import { pullAll, pushAll, setSyncUser } from "../lib/sync";
@@ -91,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       publishableKey={clerkPublishableKey as string}
       afterSignOutUrl="/"
       telemetry={false}
+      localization={esES}
     >
       <ClerkBridge>{children}</ClerkBridge>
     </ClerkProvider>
