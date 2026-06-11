@@ -514,7 +514,7 @@ function App() {
               </button>
               {menuIO && (<>
                 <div className="fixed inset-0 z-30" onClick={() => setMenuIO(false)} />
-                <div className={`absolute right-0 mt-1 w-64 ${T.panel} border ${T.border} rounded-xl shadow-xl z-40 overflow-hidden py-1`}>
+                <div className={`absolute left-0 sm:left-auto sm:right-0 mt-1 w-64 max-w-[calc(100vw-1rem)] ${T.panel} border ${T.border} rounded-xl shadow-xl z-40 overflow-hidden py-1`}>
                   <div className={`px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider ${T.textMuted}`}>Calendario (.ics)</div>
                   <button onClick={() => { setMenuIO(false); exportarICS(); }} className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 ${T.hover}`}><IconDownload w={15} h={15} /> Exportar a calendario</button>
                   <button onClick={() => { setMenuIO(false); fileIcsRef.current?.click(); }} className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 ${T.hover}`}><IconUpload w={15} h={15} /> Importar calendario</button>
