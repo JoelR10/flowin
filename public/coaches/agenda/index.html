@@ -119,6 +119,97 @@ const estadoIcon = (e) => {
 const getReminderMin = (label) => (RECORDATORIOS.find((r) => r.label === label) || RECORDATORIOS[0]).min;
 
 /* ============================
+   iCalendar (.ics) — importar / exportar
+   Estándar RFC 5545: compatible con Google Calendar, Apple Calendar, Outlook.
+   ============================ */
+const PRIO_TO_ICS = { Alta: 1, Media: 5, Baja: 9 };
+const icsFromPrio = (p) => PRIO_TO_ICS[p] || 5;
+const prioFromIcs = (n) => { const v = parseInt(n, 10); if (!v) return "Media"; if (v <= 4) return "Alta"; if (v === 5) return "Media"; return "Baja"; };
+const icsEsc = (s) => String(s || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+const icsUnesc = (s) => String(s || "").replace(/\\n/gi, "\n").replace(/\\,/g, ",").replace(/\\;/g, ";").replace(/\\\\/g, "\\");
+// fecha+hora local de la actividad → "YYYYMMDDTHHMMSS" (hora local "flotante")
+const toIcsLocal = (a, addMin = 0) => {
+  const d = new Date(`${a.fecha}T${a.hora || "00:00"}:00`);
+  if (addMin) d.setMinutes(d.getMinutes() + addMin);
+  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+};
+const icsStamp = () => { const d = new Date(); return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`; };
+// Plegado de líneas a ≤75 caracteres (RFC 5545): CRLF + espacio inicial.
+const icsFold = (line) => {
+  if (line.length <= 75) return line;
+  let out = line.slice(0, 75), rest = line.slice(75);
+  while (rest.length) { out += "\r\n " + rest.slice(0, 74); rest = rest.slice(74); }
+  return out;
+};
+const buildICS = (acts) => {
+  const L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Flowin//Agenda//ES", "CALSCALE:GREGORIAN", "METHOD:PUBLISH"];
+  acts.forEach((a) => {
+    const desc = [a.descripcion, a.notas ? `Notas: ${a.notas}` : "", `Estado: ${a.estado}`].filter(Boolean).join("\n");
+    L.push("BEGIN:VEVENT");
+    L.push(`UID:${a.id || ("ACT-" + Date.now())}@flowin.agenda`);
+    L.push(`DTSTAMP:${icsStamp()}`);
+    L.push(`DTSTART:${toIcsLocal(a)}`);
+    L.push(`DTEND:${toIcsLocal(a, 60)}`);
+    L.push(`SUMMARY:${icsEsc(a.actividad)}`);
+    if (desc) L.push(`DESCRIPTION:${icsEsc(desc)}`);
+    if (a.categoria) L.push(`CATEGORIES:${icsEsc(a.categoria)}`);
+    L.push(`PRIORITY:${icsFromPrio(a.prioridad)}`);
+    L.push(`STATUS:${a.estado === "Cancelada" ? "CANCELLED" : "CONFIRMED"}`);
+    const min = getReminderMin(a.recordatorio);
+    if (min > 0) L.push("BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:${icsEsc(a.actividad)}`, `TRIGGER:-PT${min}M`, "END:VALARM");
+    L.push("END:VEVENT");
+  });
+  L.push("END:VCALENDAR");
+  return L.map(icsFold).join("\r\n");
+};
+const parseICS = (text) => {
+  const unfolded = String(text).replace(/\r\n[ \t]/g, "").replace(/\n[ \t]/g, "");
+  const lines = unfolded.split(/\r\n|\n|\r/);
+  const events = []; let cur = null, inAlarm = false, trigger = null;
+  for (const line of lines) {
+    if (line === "BEGIN:VEVENT") { cur = {}; inAlarm = false; trigger = null; continue; }
+    if (line === "END:VEVENT") { if (cur) { if (trigger != null) cur._trigger = trigger; events.push(cur); } cur = null; continue; }
+    if (!cur) continue;
+    if (line === "BEGIN:VALARM") { inAlarm = true; continue; }
+    if (line === "END:VALARM") { inAlarm = false; continue; }
+    const idx = line.indexOf(":"); if (idx === -1) continue;
+    const left = line.slice(0, idx), val = line.slice(idx + 1);
+    const name = left.split(";")[0].toUpperCase();
+    if (inAlarm) { if (name === "TRIGGER") trigger = val; continue; }
+    if (name === "SUMMARY") cur.summary = icsUnesc(val);
+    else if (name === "DESCRIPTION") cur.description = icsUnesc(val);
+    else if (name === "CATEGORIES") cur.categories = icsUnesc(val);
+    else if (name === "PRIORITY") cur.priority = val;
+    else if (name === "STATUS") cur.status = val.toUpperCase();
+    else if (name === "DTSTART") cur.dtstart = val;
+  }
+  return events;
+};
+// "20260615T143000Z" (UTC) | "20260615T143000" (local) | "20260615" (todo el día)
+const parseIcsDate = (val) => {
+  const m = String(val).match(/(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?/);
+  if (!m) return null;
+  const Y = m[1], Mo = m[2], D = m[3], h = m[4], mi = m[5], s = m[6], z = m[7];
+  if (h == null) return { fecha: `${Y}-${Mo}-${D}`, hora: "09:00" };
+  if (z === "Z") { const d = new Date(Date.UTC(+Y, +Mo - 1, +D, +h, +mi, +(s || 0))); return { fecha: toYMD(d), hora: `${pad(d.getHours())}:${pad(d.getMinutes())}` }; }
+  return { fecha: `${Y}-${Mo}-${D}`, hora: `${h}:${mi}` };
+};
+const triggerToMin = (t) => {
+  if (!t || t[0] !== "-") return 0; // solo recordatorios ANTES del evento
+  let min = 0;
+  const d = t.match(/(\d+)D/); if (d) min += +d[1] * 1440;
+  const h = t.match(/(\d+)H/); if (h) min += +h[1] * 60;
+  const mm = t.match(/(\d+)M/); if (mm) min += +mm[1];
+  return min;
+};
+const minToReminderLabel = (min) => {
+  if (!min) return "Sin recordatorio";
+  let best = RECORDATORIOS[0], diff = Infinity;
+  RECORDATORIOS.forEach((r) => { if (r.min > 0) { const dd = Math.abs(r.min - min); if (dd < diff) { diff = dd; best = r; } } });
+  return best.label;
+};
+
+/* ============================
    App
    ============================ */
 function App() {
@@ -136,6 +227,8 @@ function App() {
   const [alertasMostradas, setAlertasMostradas] = useState(new Set());
   const [toast, setToast] = useState(null);
   const fileInputRef = useRef(null);
+  const fileIcsRef = useRef(null);
+  const [menuIO, setMenuIO] = useState(false);
   const [nagIntervalo, setNagIntervalo] = useState(15);
   const [nagActivo, setNagActivo] = useState(true);
   const [ultimoNag, setUltimoNag] = useState({});
@@ -317,6 +410,59 @@ function App() {
     e.target.value = "";
   };
 
+  // Exportar a .ics (calendario estándar): se abre en Google/Apple/Outlook.
+  const exportarICS = () => {
+    if (!actividades.length) { setToast({ tipo: "err", titulo: "Vacío", mensaje: "No hay actividades para exportar" }); return; }
+    const blob = new Blob([buildICS(actividades)], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `flowin-agenda-${toYMD(new Date())}.ics`; a.click();
+    URL.revokeObjectURL(url);
+    setToast({ tipo: "ok", titulo: "Exportado", mensaje: `${actividades.length} eventos en .ics` });
+  };
+
+  // Importar .ics: AGREGA los eventos (no reemplaza), evitando duplicados.
+  const importarICS = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const events = parseICS(ev.target.result);
+        if (!events.length) { setToast({ tipo: "err", titulo: "Sin eventos", mensaje: "El archivo .ics no tiene eventos" }); return; }
+        setActividades((prev) => {
+          const seen = new Set(prev.map((a) => `${a.fecha}|${a.hora}|${(a.actividad || "").toLowerCase()}`));
+          const next = [...prev];
+          let added = 0, skipped = 0;
+          events.forEach((evt) => {
+            const dt = parseIcsDate(evt.dtstart);
+            if (!dt || !evt.summary) { skipped++; return; }
+            const key = `${dt.fecha}|${dt.hora}|${evt.summary.toLowerCase()}`;
+            if (seen.has(key)) { skipped++; return; }
+            seen.add(key);
+            const catMatch = CATEGORIAS.find((c) => c.nombre.toLowerCase() === String(evt.categories || "").toLowerCase());
+            next.push({
+              id: nextId(next),
+              fecha: dt.fecha, hora: dt.hora,
+              actividad: evt.summary,
+              descripcion: evt.description || "",
+              categoria: catMatch ? catMatch.nombre : "Personal",
+              prioridad: prioFromIcs(evt.priority),
+              estado: evt.status === "CANCELLED" ? "Cancelada" : "Pendiente",
+              recordatorio: minToReminderLabel(triggerToMin(evt._trigger)),
+              notas: "",
+            });
+            added++;
+          });
+          setTimeout(() => setToast({ tipo: added ? "ok" : "err", titulo: added ? "Importado" : "Nada nuevo", mensaje: `${added} agregadas${skipped ? `, ${skipped} omitidas` : ""}` }), 0);
+          return next;
+        });
+      } catch (_) { setToast({ tipo: "err", titulo: "Error", mensaje: "Archivo .ics inválido" }); }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
   const T = dark ? {
     bg: "bg-slate-900", panel: "bg-slate-800", border: "border-slate-700",
     text: "text-slate-100", textMuted: "text-slate-400", input: "bg-slate-700 border-slate-600 text-slate-100",
@@ -362,9 +508,25 @@ function App() {
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full grid place-items-center animate-pulse">{stats.vencidas}</span>
               )}
             </button>
-            <button onClick={exportar} title="Exportar JSON" className={`p-2 rounded-lg border ${T.border} ${T.hover}`}><IconDownload /></button>
-            <button onClick={() => fileInputRef.current?.click()} title="Importar JSON" className={`p-2 rounded-lg border ${T.border} ${T.hover}`}><IconUpload /></button>
+            <div className="relative">
+              <button onClick={() => setMenuIO((v) => !v)} title="Importar / Exportar" className={`p-2 rounded-lg border ${T.border} ${T.hover} flex items-center gap-1`}>
+                <IconCalendar /><span className="text-xs hidden sm:inline">⇅</span>
+              </button>
+              {menuIO && (<>
+                <div className="fixed inset-0 z-30" onClick={() => setMenuIO(false)} />
+                <div className={`absolute right-0 mt-1 w-64 ${T.panel} border ${T.border} rounded-xl shadow-xl z-40 overflow-hidden py-1`}>
+                  <div className={`px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider ${T.textMuted}`}>Calendario (.ics)</div>
+                  <button onClick={() => { setMenuIO(false); exportarICS(); }} className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 ${T.hover}`}><IconDownload w={15} h={15} /> Exportar a calendario</button>
+                  <button onClick={() => { setMenuIO(false); fileIcsRef.current?.click(); }} className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 ${T.hover}`}><IconUpload w={15} h={15} /> Importar calendario</button>
+                  <div className={`my-1 border-t ${T.border}`} />
+                  <div className={`px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider ${T.textMuted}`}>Respaldo (.json)</div>
+                  <button onClick={() => { setMenuIO(false); exportar(); }} className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 ${T.hover} ${T.textMuted}`}><IconDownload w={15} h={15} /> Exportar respaldo</button>
+                  <button onClick={() => { setMenuIO(false); fileInputRef.current?.click(); }} className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 ${T.hover} ${T.textMuted}`}><IconUpload w={15} h={15} /> Restaurar respaldo</button>
+                </div>
+              </>)}
+            </div>
             <input ref={fileInputRef} type="file" accept=".json" onChange={importar} className="hidden" />
+            <input ref={fileIcsRef} type="file" accept=".ics,text/calendar" onChange={importarICS} className="hidden" />
             <button onClick={() => setDark(!dark)} title="Tema" className={`p-2 rounded-lg border ${T.border} ${T.hover}`}>{dark ? <IconSun /> : <IconMoon />}</button>
             <button onClick={() => { setEditando(null); setModalAbierto(true); }}
               className="px-3 py-2 rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 text-white font-medium flex items-center gap-2 hover:opacity-90">
